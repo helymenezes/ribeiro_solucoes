@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Portfólio de Serviços - Ribeiro Soluções</title>
+
+  <!-- ========== Trocar favicon e logo ==========
+       - Troque o caminho abaixo pelo seu favicon (opcional).
+       - Exemplo: <link rel="icon" href="img/meu-favicon.ico" />
+  ============================================ -->
+  <!-- <link rel="icon" href="img/favicon.ico" /> -->
+
+  <style>
+    /* RESET / BASE */
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f4f7fb; color:#0f172a; }
+    a { color:inherit; text-decoration:none; }
+    .container { max-width:1100px; margin:32px auto; padding:16px; }
+
+    /* HEADER */
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px; background:linear-gradient(90deg,#0f172a,#0b1220); color:#fff; border-radius:10px; }
+    .brand { display:flex; gap:12px; align-items:center; }
+    .logo { width:44px; height:44px; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .logo img { width:36px; height:36px; object-fit:contain; }
+    h1 { font-size:18px; margin:0; font-weight:600; }
+
+    /* CONTROLES GLOBAIS */
+    .controls { display:flex; gap:8px; align-items:center; }
+    .btn { background:#059669; color:#fff; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600; }
+    .btn.warn { background:#ef4444; }
+    .btn.ghost { background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.12); }
+
+    /* GRID DE SERVIÇOS */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; margin-top:20px; }
+    .card { background:#fff; border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(12,13,16,0.06); cursor:pointer; transition:transform .18s, box-shadow .18s; border:1px solid #e6eef6; }
+    .card:hover { transform:translateY(-6px); box-shadow:0 14px 30px rgba(12,13,16,0.08); }
+    .card h3 { margin:0 0 8px 0; font-size:16px; }
+    .card p { margin:0; color:#475569; font-size:13px; }
+
+    /* VISTA DO SERVIÇO */
+    .service-page { display:none; margin-top:18px; }
+    .service-header { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:12px; }
+    .service-title { font-size:20px; font-weight:700; }
+    .edit-title { display:flex; gap:8px; align-items:center; }
+    input.title-input { padding:8px 10px; border-radius:8px; border:1px solid #cbd5e1; }
+
+    /* UPLOAD AREA */
+    .upload-area { background:#f8fafc; border:2px dashed #e2e8f0; padding:18px; border-radius:10px; text-align:center; color:#475569; cursor:pointer; transition:background .12s, border-color .12s; }
+    .upload-area.dragover { background:#ecfdf5; border-color:#34d399; }
+    .thumbs { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-top:12px; }
+    .thumb { background:#fff; border-radius:8px; padding:6px; border:1px solid #e6eef6; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; }
+    .thumb img { width:100%; height:90px; object-fit:cover; border-radius:6px; }
+    .thumb .meta { font-size:12px; color:#475569; display:flex; gap:6px; justify-content:space-between; width:100%; }
+
+    /* LIGHTBOX */
+    .lightbox { position:fixed; inset:0; background:rgba(2,6,23,0.8); display:flex; align-items:center; justify-content:center; z-index:999; opacity:0; pointer-events:none; transition:opacity .18s; }
+    .lightbox.show { opacity:1; pointer-events:auto; }
+    .lightbox img { max-width:92vw; max-height:82vh; border-radius:8px; box-shadow:0 12px 40px rgba(2,6,23,0.6); }
+    .lb-controls { position:fixed; top:18px; right:18px; display:flex; gap:8px; }
+
+    /* FOOTER / RESPONSIVE */
+    footer { text-align:center; margin-top:26px; color:#64748b; font-size:13px; }
+
+    /* SMALL SCREEN ADJUSTMENTS */
+    @media (max-width:520px){
+      header { flex-direction:column; align-items:flex-start; gap:10px; }
+      .controls { width:100%; justify-content:space-between; }
+    }
+  </style>
+
+  <!-- JSZip (CDN) — usado para baixar todas as imagens em um ZIP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo" title="Troque aqui pelo seu logo">
+          <!-- ========== TROCAR LOGO ==========
+               - Substitua a tag <img src="..."> pelo seu arquivo de logo
+               - Exemplo: <img src="img/logo.png" alt="Meu Logo">
+               - Se preferir, remova a imagem e deixe um SVG aqui.
+          =================================== -->
+          <img src="img/logo.PNG" alt="Logo" />
+        </div>
+        <div>
+          <h1>Ribeiro Soluções</h1>
+          <div style="font-size:12px; opacity:0.85;">Portfólio de serviços e galerias</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="btnNewService">+ Novo Serviço</button>
+        <button class="btn" id="btnClear" title="Limpar todos os serviços e imagens" style="background:#ef4444;">Limpar Dados</button>
+      </div>
+    </header>
+
+    <!-- VISTA: LISTA DE SERVIÇOS -->
+    <section id="listView" class="main-view">
+      <h2 style="margin-top:20px; margin-bottom:6px;">Serviços</h2>
+      <p style="margin:0 0 12px 0; color:#64748b;">Clique em um card para abrir a galeria e gerenciar imagens.</p>
+      <div id="servicesGrid" class="grid" aria-live="polite"></div>
+    </section>
+
+    <!-- VISTA: PÁGINA DO SERVIÇO -->
+    <section id="serviceView" class="service-page">
+      <div class="service-header">
+        <div>
+          <div class="service-title" id="serviceTitleView"></div>
+          <div style="font-size:13px; color:#64748b;">Gerencie imagens, edite título e baixe tudo</div>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="edit-title" title="Editar título">
+            <input class="title-input" id="titleInput" />
+            <button class="btn" id="btnSaveTitle">Salvar</button>
+          </div>
+          <button class="btn" id="btnBack" style="background:#0ea5a4;">Voltar</button>
+        </div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div id="uploadArea" class="upload-area">
+        <div style="font-weight:600; margin-bottom:8px;">Arraste e solte imagens aqui</div>
+        <div style="color:#475569; font-size:13px; margin-bottom:10px;">ou use o botão abaixo</div>
+        <input id="fileInput" type="file" accept="image/*" multiple style="display:none" />
+        <button class="btn" id="btnSelectFiles">Selecionar Arquivos</button>
+        <div style="margin-top:10px; font-size:12px; color:#94a3b8;">Suporta JPEG, PNG. As imagens ficam salvas localmente no navegador.</div>
+      </div>
+
+      <!-- Miniaturas / Thumbnails -->
+      <div id="thumbs" class="thumbs" style="margin-top:14px;"></div>
+
+      <!-- Ações -->
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <button class="btn" id="btnDownloadAll">Baixar todas (ZIP)</button>
+        <button class="btn" id="btnDeleteAll" style="background:#ef4444;">Excluir imagens deste serviço</button>
+      </div>
+    </section>
+
+    <!-- LIGHTBOX -->
+    <div id="lightbox" class="lightbox" aria-hidden="true">
+      <div class="lb-controls">
+        <button class="btn" id="lbPrev">◀</button>
+        <button class="btn" id="lbNext">▶</button>
+        <button class="btn" id="lbClose" style="background:#ef4444;">Fechar</button>
+      </div>
+      <img id="lbImage" src="" alt="Visualização" />
+    </div>
+
+    <footer>
+      <small>Imagens armazenadas localmente no navegador (localStorage). <br/> Desenvolvido para uso offline simples.</small>
+    </footer>
+  </div>
+
+  <script>
+    /* =====================
+       Estrutura de dados no localStorage:
+       key = "servicesData"
+       value = JSON.stringify(array de serviços)
+       serviço = { id: "uuid", title: "Instalações Prediais", images: [dataURL, ...] }
+    ===================== */
+
+    // Utilitários
+    function uid() { return 's_' + Math.random().toString(36).slice(2,9); }
+    function readStorage(){ try { return JSON.parse(localStorage.getItem('servicesData')||'null')||null; } catch(e){ return null; } }
+    function saveStorage(data){ localStorage.setItem('servicesData', JSON.stringify(data)); }
+
+    // Inicializar dados padrão se não existir
+    let services = readStorage();
+    if(!services){
+      services = [
+        { id: uid(), title: 'Instalações Prediais', images: [] },
+        { id: uid(), title: 'Residenciais', images: [] },
+        { id: uid(), title: 'Automação', images: [] }
+      ];
+      saveStorage(services);
+    }
+
+    // Elementos
+    const grid = document.getElementById('servicesGrid');
+    const listView = document.getElementById('listView');
+    const serviceView = document.getElementById('serviceView');
+    const serviceTitleView = document.getElementById('serviceTitleView');
+    const titleInput = document.getElementById('titleInput');
+    const btnSaveTitle = document.getElementById('btnSaveTitle');
+    const btnBack = document.getElementById('btnBack');
+    const btnNewService = document.getElementById('btnNewService');
+    const btnClear = document.getElementById('btnClear');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const btnSelectFiles = document.getElementById('btnSelectFiles');
+    const thumbs = document.getElementById('thumbs');
+    const btnDownloadAll = document.getElementById('btnDownloadAll');
+    const btnDeleteAll = document.getElementById('btnDeleteAll');
+
+    const lightbox = document.getElementById('lightbox');
+    const lbImage = document.getElementById('lbImage');
+    const lbPrev = document.getElementById('lbPrev');
+    const lbNext = document.getElementById('lbNext');
+    const lbClose = document.getElementById('lbClose');
+
+    let currentServiceId = null;
+    let currentIndex = 0;
+
+    // Renderiza grade de serviços
+    function renderGrid(){
+      grid.innerHTML = '';
+      services.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = `
+          <h3>${escapeHtml(s.title)}</h3>
+          <p>${s.images.length} imagem(s)</p>
+        `;
+        el.addEventListener('click',()=> openService(s.id));
+        grid.appendChild(el);
+      });
+    }
+
+    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Abrir page do serviço (single page navigation)
+    function openService(id){
+      currentServiceId = id;
+      const s = services.find(x=>x.id===id);
+      if(!s) return alert('Serviço não encontrado');
+      serviceTitleView.textContent = s.title;
+      titleInput.value = s.title;
+      listView.style.display = 'none';
+      serviceView.style.display = 'block';
+      renderThumbs();
+    }
+
+    // Voltar para lista
+    btnBack.addEventListener('click',()=>{
+      serviceView.style.display = 'none';
+      listView.style.display = 'block';
+      currentServiceId = null;
+    });
+
+    // Salvar título
+    btnSaveTitle.addEventListener('click',()=>{
+      if(!currentServiceId) return;
+      const newTitle = titleInput.value.trim() || 'Serviço sem título';
+      const s = services.find(x=>x.id===currentServiceId);
+      s.title = newTitle;
+      saveStorage(services);
+      renderGrid();
+      serviceTitleView.textContent = s.title;
+      alert('Título salvo.');
+    });
+
+    // Novo serviço
+    btnNewService.addEventListener('click',()=>{
+      const title = prompt('Título do novo serviço:', 'Novo Serviço');
+      if(title === null) return;
+      const s = { id: uid(), title: title.trim() || 'Novo Serviço', images: [] };
+      services.unshift(s);
+      saveStorage(services);
+      renderGrid();
+      openService(s.id);
+    });
+
+    // Limpar todos os dados
+    btnClear.addEventListener('click',()=>{
+      if(!confirm('Excluir TODOS os serviços e imagens salvos localmente?')) return;
+      localStorage.removeItem('servicesData');
+      services = [
+        { id: uid(), title: 'Instalações Prediais', images: [] },
+        { id: uid(), title: 'Residenciais', images: [] },
+        { id: uid(), title: 'Automação', images: [] }
+      ];
+      saveStorage(services);
+      renderGrid();
+      // voltar à lista
+      serviceView.style.display = 'none';
+      listView.style.display = 'block';
+      alert('Dados limpos.');
+    });
+
+    /* ========== UPLOAD (drag & drop + file input) ========== */
+    function handleFiles(fileList){
+      if(!currentServiceId) { alert('Abra um serviço antes de enviar imagens.'); return; }
+      const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
+      if(files.length === 0) return alert('Nenhuma imagem selecionada.');
+      const s = services.find(x=>x.id===currentServiceId);
+      let readCount = 0;
+      files.forEach(file=>{
+        const reader = new FileReader();
+        reader.onload = (e)=>{
+          // Armazenar dataURL
+          s.images.push(e.target.result);
+          readCount++;
+          if(readCount === files.length){
+            saveStorage(services);
+            renderThumbs();
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Drag events
+    ['dragenter','dragover'].forEach(ev=>{
+      uploadArea.addEventListener(ev,(e)=>{ e.preventDefault(); e.stopPropagation(); uploadArea.classList.add('dragover'); });
+    });
+    ['dragleave','drop'].forEach(ev=>{
+      uploadArea.addEventListener(ev,(e)=>{ e.preventDefault(); e.stopPropagation(); uploadArea.classList.remove('dragover'); });
+    });
+    uploadArea.addEventListener('drop',(e)=>{
+      const dt = e.dataTransfer;
+      if(dt && dt.files) handleFiles(dt.files);
+    });
+
+    btnSelectFiles.addEventListener('click',()=> fileInput.click());
+    fileInput.addEventListener('change',()=> handleFiles(fileInput.files));
+
+    // Renderizar thumbnails da galeria do serviço
+    function renderThumbs(){
+      thumbs.innerHTML = '';
+      const s = services.find(x=>x.id===currentServiceId);
+      if(!s) return;
+      s.images.forEach((dataURL, idx)=>{
+        const d = document.createElement('div');
+        d.className = 'thumb';
+        d.innerHTML = `
+          <img src="${dataURL}" alt="imagem ${idx+1}" />
+          <div class="meta">
+            <span>${idx+1}</span>
+            <span style="display:flex; gap:6px;">
+              <button title="Visualizar" data-idx="${idx}" style="background:#06b6d4; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">Ver</button>
+              <button title="Baixar" data-download="${idx}" style="background:#059669; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">Baixar</button>
+              <button title="Remover" data-remove="${idx}" style="background:#ef4444; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">X</button>
+            </span>
+          </div>
+        `;
+        thumbs.appendChild(d);
+      });
+
+      // delegação de eventos para thumbs
+      thumbs.querySelectorAll('button[title="Visualizar"]').forEach(b => {
+        b.onclick = (e)=> { openLightbox(parseInt(e.currentTarget.getAttribute('data-idx'),10)); };
+      });
+      thumbs.querySelectorAll('button[data-download]').forEach(b => {
+        b.onclick = (e)=> {
+          const idx = parseInt(e.currentTarget.getAttribute('data-download'),10);
+          downloadImageByIndex(idx);
+        };
+      });
+      thumbs.querySelectorAll('button[data-remove]').forEach(b => {
+        b.onclick = (e)=> {
+          const idx = parseInt(e.currentTarget.getAttribute('data-remove'),10);
+          removeImageByIndex(idx);
+        };
+      });
+    }
+
+    // Remover imagem
+    function removeImageByIndex(idx){
+      const s = services.find(x=>x.id===currentServiceId);
+      if(!s) return;
+      if(!confirm('Remover esta imagem?')) return;
+      s.images.splice(idx,1);
+      saveStorage(services);
+      renderThumbs();
+    }
+
+    // Baixar imagem individual
+    function downloadImageByIndex(idx){
+      const s = services.find(x=>x.id===currentServiceId);
+      if(!s) return;
+      const dataURL = s.images[idx];
+      if(!dataURL) return;
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = `${s.title.replace(/\s+/g,'_')}_${idx+1}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Baixar todas as imagens (ZIP) usando JSZip
+    btnDownloadAll.addEventListener('click', async ()=>{
+      const s = services.find(x=>x.id===currentServiceId);
+      if(!s) return;
+      if(!s.images.length) return alert('Nenhuma imagem para baixar.');
+      const zip = new JSZip();
+      // converter dataURL para blob e adicionar ao zip
+      for(let i=0;i<s.images.length;i++){
+        const dataURL = s.images[i];
+        const blob = dataURLToBlob(dataURL);
+        zip.file(`${s.title.replace(/\s+/g,'_')}_${i+1}.png`, blob);
+      }
+      const content = await zip.generateAsync({type:"blob"});
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${s.title.replace(/\s+/g,'_')}_imagens.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    function dataURLToBlob(dataURL){
+      const parts = dataURL.split(',');
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      return new Blob([u8arr], {type:mime});
+    }
+
+    // Excluir todas as imagens do serviço atual
+    btnDeleteAll.addEventListener('click',()=>{
+      if(!currentServiceId) return;
+      if(!confirm('Excluir TODAS as imagens deste serviço?')) return;
+      const s = services.find(x=>x.id===currentServiceId);
+      s.images = [];
+      saveStorage(services);
+      renderThumbs();
+    });
+
+    /* ========== LIGHTBOX FUNCIONALIDADE ========== */
+    function openLightbox(idx){
+      const s = services.find(x=>x.id===currentServiceId);
+      if(!s || !s.images.length) return;
+      currentIndex = idx;
+      lbImage.src = s.images[currentIndex];
+      lightbox.classList.add('show');
+      lightbox.setAttribute('aria-hidden','false');
+    }
+    function closeLightbox(){ lightbox.classList.remove('show'); lightbox.setAttribute('aria-hidden','true'); }
+    function lbNextImg(){ const s = services.find(x=>x.id===currentServiceId); if(!s) return; currentIndex = (currentIndex+1) % s.images.length; lbImage.src = s.images[currentIndex]; }
+    function lbPrevImg(){ const s = services.find(x=>x.id===currentServiceId); if(!s) return; currentIndex = (currentIndex-1 + s.images.length) % s.images.length; lbImage.src = s.images[currentIndex]; }
+
+    lbClose.addEventListener('click', closeLightbox);
+    lbNext.addEventListener('click', lbNextImg);
+    lbPrev.addEventListener('click', lbPrevImg);
+    lightbox.addEventListener('click', (e)=>{ if(e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e)=> {
+      if(lightbox.classList.contains('show')){
+        if(e.key === 'Escape') closeLightbox();
+        if(e.key === 'ArrowRight') lbNextImg();
+        if(e.key === 'ArrowLeft') lbPrevImg();
+      }
+    });
+
+    // Render inicial
+    renderGrid();
+
+    // Rota simples via hash (opcional): se o hash for #service:id abre o serviço
+    window.addEventListener('hashchange',()=>{
+      const h = location.hash;
+      if(h.startsWith('#service:')){
+        const id = h.replace('#service:','');
+        const s = services.find(x=>x.id===id);
+        if(s) openService(id);
+      } else {
+        // voltar para lista
+        serviceView.style.display = 'none';
+        listView.style.display = 'block';
+      }
+    });
+
+    // Suporte para abrir service e atualizar URL
+    function openServiceWithHash(id){
+      location.hash = 'service:' + id;
+      openService(id);
+    }
+    // Rebind cards to new function that also updates hash:
+    function renderGrid(){
+      grid.innerHTML = '';
+      services.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = `
+          <h3>${escapeHtml(s.title)}</h3>
+          <p>${s.images.length} imagem(s)</p>
+        `;
+        el.addEventListener('click',()=> openServiceWithHash(s.id));
+        grid.appendChild(el);
+      });
+    }
+    // Re-render inicial
+    renderGrid();
+
+    /* ===================
+       Instruções curtas de hospedagem:
+
+       - Localmente:
+         1) Salve este arquivo como index.html.
+         2) Abra no navegador (duplo clique) OU para evitar restrições use um servidor simples:
+            - No Windows PowerShell: Serve via Python 3: `python -m http.server 5500`
+            - Em seguida acesse: http://localhost:5500
+
+       - Netlify / outros hosts estáticos:
+         1) Faça o deploy do arquivo index.html (e se tiver assets, coloque-os na mesma pasta).
+         2) Netlify, Vercel ou GitHub Pages aceitam diretamente o arquivo (arraste e solte no painel ou faça push do repositório).
+       Obs: localStorage é por domínio; em hospedagem pública os dados persistirão por navegador/usuário.
+
+       =================== */
+
+  </script>
+</body>
+</html>
