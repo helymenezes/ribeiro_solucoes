@@ -3,227 +3,304 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Serviços Elétricos - Ribeiro Soluções</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-    .gradient-bg { background: linear-gradient(135deg, #64748b 0%, #334155 100%); }
-    .dark-gradient { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
-    .icon-shadow { box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-    .whatsapp-float {
-      animation: pulse 2s infinite;
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-  </style>
+  <title>Ribeiro Soluções — Serviços Elétricos com Excelência</title>
+  <meta name="description" content="Ribeiro Soluções: especialistas em instalações elétricas prediais, residenciais e automação. Atendimento rápido, seguro e com qualidade garantida.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="img/logo.PNG" type="image/png">
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
+<body>
 
-  <!-- Header -->
-  <header class="dark-gradient text-white p-6 shadow-2xl">
-    <div class="max-w-6xl mx-auto flex justify-between items-center">
-      <!-- Logo/Ícone -->
-      <div class="flex items-center space-x-4">
-        <div class="w-12 h-12 bg-white rounded-xl icon-shadow flex items-center justify-center">
-          <!-- ALTERE AQUI: Substitua por sua imagem -->
-          <img src="img/logo.PNG" alt="Logo" class="w-8 h-8 object-contain">
-          
-          <!-- OU use um SVG personalizado -->
-          <!-- <svg width="28" height="28" viewBox="0 0 40 40" class="text-slate-700">
-            SEU_SVG_AQUI
-          </svg> -->
-        </div>
-        <h1 class="text-xl font-semibold tracking-tight">Ribeiro Soluções</h1>
-      </div>
-      
-      <nav class="hidden md:flex space-x-8">
-        <a href="#sobre" class="hover:text-gray-300 transition-colors font-medium">Sobre</a>
-        <a href="#servicos" class="hover:text-gray-300 transition-colors font-medium">Serviços</a>
-        <a href="#contato" class="hover:text-gray-300 transition-colors font-medium">Contato</a>
-      </nav>
+  <!-- ===== HEADER (Floating) ===== -->
+  <header class="site-header" id="siteHeader">
+    <div class="header-logo">
+      <img src="img/logo.PNG" alt="Ribeiro Soluções" width="36" height="36">
+      <span>Ribeiro Soluções</span>
     </div>
+    <nav class="header-nav" id="headerNav">
+      <a href="#sobre">Sobre</a>
+      <a href="#servicos">Serviços</a>
+      <a href="#processo">Processo</a>
+      <a href="#portfolio">Portfólio</a>
+      <a href="#depoimentos">Depoimentos</a>
+      <a href="#contato" class="header-cta">Orçamento</a>
+    </nav>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Abrir menu">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </header>
 
-  <!-- Hero -->
-  <section class="gradient-bg text-white py-24">
-    <div class="max-w-6xl mx-auto px-6 text-center">
-      <h2 class="text-5xl font-light mb-6 tracking-tight">
-        Serviços Elétricos 
-        <span class="font-semibold">Prediais & Residenciais</span>
-      </h2>
-      <p class="text-xl font-light opacity-90 max-w-2xl mx-auto leading-relaxed mb-8">
-        Atendimento rápido, seguro e com qualidade garantida para todos os seus projetos elétricos
-      </p>
-      
+  <!-- ===== HERO CINEMATOGRÁFICO ===== -->
+  <section class="hero" id="sobre">
+    <div class="hero-bg">
+      <img src="img/hero.png" alt="Projeto elétrico profissional" loading="eager">
+    </div>
+    <div class="hero-content fade-up">
+      <div class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Mais de 10 anos de experiência
+      </div>
+      <h1>Soluções Elétricas com <span>Excelência</span></h1>
+      <p>Projetos elétricos residenciais, prediais e automação com a precisão e confiabilidade que sua obra merece.</p>
+      <div class="hero-buttons">
+        <a href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento." target="_blank" rel="noopener" class="btn-primary">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/></svg>
+          Solicite um Orçamento
+        </a>
+        <a href="#servicos" class="btn-ghost">Nossos Serviços</a>
+      </div>
+    </div>
+    <div class="scroll-indicator">
+      <span>SCROLL</span>
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8l6 6 6-6"/></svg>
     </div>
   </section>
 
-  <!-- Sobre -->
-  <section id="sobre" class="py-20 px-6">
-    <div class="max-w-4xl mx-auto text-center">
-      <h3 class="text-4xl font-light mb-8 text-slate-800">Sobre Nós</h3>
-      <p class="text-lg font-light text-slate-600 leading-relaxed">
-        Somos especialistas em instalações elétricas prediais, residenciais e comerciais. 
-        Nossa missão é oferecer soluções seguras e eficientes, utilizando tecnologia de ponta 
-        e as melhores práticas do mercado.
-      </p>
+  <!-- ===== NÚMEROS DE CONFIANÇA ===== -->
+  <section class="stats">
+    <div class="stats-grid">
+      <div class="stat-item fade-up">
+        <h3 class="counter" data-target="500">0</h3>
+        <p>Projetos Realizados</p>
+      </div>
+      <div class="stat-item fade-up">
+        <h3 class="counter" data-target="10">0</h3>
+        <p>Anos de Experiência</p>
+      </div>
+      <div class="stat-item fade-up">
+        <h3 class="counter" data-target="200">0</h3>
+        <p>Clientes Satisfeitos</p>
+      </div>
     </div>
   </section>
 
-  <!-- Serviços -->
-  <section id="servicos" class="bg-white py-20 px-6">
-    <div class="max-w-6xl mx-auto">
-      <h3 class="text-4xl font-light text-center mb-16 text-slate-800">Nossos Serviços</h3>
-
-      <div class="grid md:grid-cols-3 gap-8">
-        
-        <!-- Card 1 -->
-        <div class="group cursor-pointer">
-          <div class="bg-gradient-to-br from-slate-50 to-gray-100 rounded-3xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-200">
-            <a href="instalacoes_prediais.html" style="display:block; text-decoration:none; color:inherit;">
-              <div class="w-16 h-16 gradient-bg rounded-2xl mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-white">
-                  <path d="M3 21h18v-2H3v2zM5 7h14v12H5V7zM7 9v8h10V9H7z" fill="currentColor"/>
-                  <rect x="9" y="11" width="6" height="2" fill="currentColor"/>
-                  <rect x="9" y="13" width="4" height="2" fill="currentColor"/>
-                </svg>
-              </div>
-              <h4 class="text-xl font-semibold mb-3 text-slate-800">Instalações Prediais</h4>
-              <p class="font-light text-slate-600 leading-relaxed">
-                Projetos e execução de sistemas elétricos completos para edifícios e condomínios com máxima segurança.
-              </p>
-            </a>
-            <!-- Botão WhatsApp no Card -->
-            <div class="mt-6">
-              <a
-                class="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-                href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20or%C3%A7amento%20para%20instala%C3%A7%C3%B5es%20prediais."
-                target="_blank" rel="noopener"
-              >
-                <svg width="18" height="18" class="mr-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/>
-                </svg>
-                Solicitar Orçamento
-              </a>
-            </div>
+  <!-- ===== SERVIÇOS ===== -->
+  <section class="services" id="servicos">
+    <div class="section-header fade-up">
+      <h2>Nossos Serviços</h2>
+      <p>Soluções completas em engenharia elétrica para transformar cada projeto com segurança e eficiência.</p>
+    </div>
+    <div class="services-grid">
+      <!-- Card 1: Predial -->
+      <div class="service-card fade-up">
+        <div class="service-card-img"><img src="img/predial.png" alt="Instalações Prediais" loading="lazy"></div>
+        <div class="service-card-body">
+          <div class="service-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"/></svg>
           </div>
+          <h4>Instalações Prediais</h4>
+          <p>Projetos e execução de sistemas elétricos completos para edifícios e condomínios com máxima segurança e conformidade normativa.</p>
+          <a href="instalacoes_prediais.html" class="service-card-link">Saiba mais <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </div>
-
-        <!-- Card 2 -->
-        <div class="group cursor-pointer">
-          <div class="bg-gradient-to-br from-slate-50 to-gray-100 rounded-3xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-200">
-            <a href="residenciais.html" style="display:block; text-decoration:none; color:inherit;">
-              <div class="w-16 h-16 gradient-bg rounded-2xl mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-white">
-                  <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z" fill="currentColor"/>
-                </svg>
-              </div>
-              <h4 class="text-xl font-semibold mb-3 text-slate-800">Residenciais</h4>
-              <p class="font-light text-slate-600 leading-relaxed">
-                Instalações elétricas seguras, modernas e otimizadas para proporcionar conforto em sua casa.
-              </p>
-            </a>
-            <!-- Botão WhatsApp no Card -->
-            <div class="mt-6">
-              <a
-                class="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-                href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20or%C3%A7amento%20para%20instala%C3%A7%C3%B5es%20residenciais."
-                target="_blank" rel="noopener"
-              >
-                <svg width="18" height="18" class="mr-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/>
-                </svg>
-                Solicitar Orçamento
-              </a>
-            </div>
+      </div>
+      <!-- Card 2: Residencial -->
+      <div class="service-card fade-up">
+        <div class="service-card-img"><img src="img/residencial.png" alt="Residenciais" loading="lazy"></div>
+        <div class="service-card-body">
+          <div class="service-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </div>
+          <h4>Residenciais</h4>
+          <p>Instalações elétricas seguras, modernas e otimizadas para proporcionar conforto e economia em sua residência.</p>
+          <a href="residenciais.html" class="service-card-link">Saiba mais <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </div>
-
-        <!-- Card 3 -->
-        <div class="group cursor-pointer">
-          <div class="bg-gradient-to-br from-slate-50 to-gray-100 rounded-3xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-200">
-            <a href="automacao.html" style="display:block; text-decoration:none; color:inherit;">
-              <div class="w-16 h-16 gradient-bg rounded-2xl mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-white">
-                  <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                  <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" stroke="currentColor" stroke-width="2"/>
-                </svg>
-              </div>
-              <h4 class="text-xl font-semibold mb-3 text-slate-800">Automação</h4>
-              <p class="font-light text-slate-600 leading-relaxed">
-                Soluções em automação residencial e predial, trazendo tecnologia, conforto e segurança.
-              </p>
-            </a>
-            <!-- Botão WhatsApp no Card -->
-            <div class="mt-6">
-              <a
-                class="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-                href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20or%C3%A7amento%20para%20automa%C3%A7%C3%A3o%20residencial."
-                target="_blank" rel="noopener"
-              >
-                <svg width="18" height="18" class="mr-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/>
-                </svg>
-                Solicitar Orçamento
-              </a>
-            </div>
+      </div>
+      <!-- Card 3: Automação -->
+      <div class="service-card fade-up">
+        <div class="service-card-img"><img src="img/automacao.png" alt="Automação" loading="lazy"></div>
+        <div class="service-card-body">
+          <div class="service-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/><circle cx="12" cy="14" r="2"/></svg>
           </div>
+          <h4>Automação</h4>
+          <p>Soluções em automação residencial e predial, integrando tecnologia, conforto e segurança ao seu espaço.</p>
+          <a href="automacao.html" class="service-card-link">Saiba mais <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Contato -->
-  <section id="contato" class="gradient-bg py-20 px-6 text-white">
-    <div class="max-w-4xl mx-auto text-center">
-      <h3 class="text-4xl font-light mb-8">Fale Conosco</h3>
-      <p class="text-lg font-light mb-8 opacity-90">
-        Entre em contato para solicitar um orçamento personalizado
-      </p>
-      
-      <!-- Botões de Contato -->
-      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <a
-          class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 text-white px-8 py-4 font-medium hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl hover:transform hover:-translate-y-1"
-          href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento%20para%20servi%C3%A7os%20el%C3%A9tricos."
-          target="_blank" rel="noopener"
-        >
-          <svg width="24" height="24" class="mr-3" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/>
-          </svg>
-          WhatsApp Direto
-        </a>
-        
-        <a href="mailto:contato@ribeirosoluções.com" 
-           class="inline-block bg-white text-slate-800 py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all font-medium hover:transform hover:-translate-y-1">
-           Enviar Email
-        </a>
+  <!-- ===== PROCESSO DE TRABALHO ===== -->
+  <section class="process" id="processo">
+    <div class="section-header fade-up">
+      <h2>Nosso Processo</h2>
+      <p>Cada etapa é planejada para garantir resultados excepcionais.</p>
+    </div>
+    <div class="process-steps">
+      <div class="process-step fade-up">
+        <div class="step-number">1</div>
+        <h4>Consulta</h4>
+        <p>Entendemos suas necessidades e fazemos uma análise detalhada do projeto.</p>
+      </div>
+      <div class="process-step fade-up">
+        <div class="step-number">2</div>
+        <h4>Projeto</h4>
+        <p>Elaboramos o projeto elétrico seguindo todas as normas técnicas vigentes.</p>
+      </div>
+      <div class="process-step fade-up">
+        <div class="step-number">3</div>
+        <h4>Execução</h4>
+        <p>Realizamos a instalação com equipe qualificada e materiais de primeira linha.</p>
+      </div>
+      <div class="process-step fade-up">
+        <div class="step-number">4</div>
+        <h4>Entrega</h4>
+        <p>Testes completos, documentação e garantia total do serviço realizado.</p>
       </div>
     </div>
   </section>
 
-  <!-- Rodapé -->
-  <footer class="dark-gradient text-white text-center py-8 px-6">
-    <div class="max-w-6xl mx-auto">
-      <p class="font-light opacity-75">&copy; 2025 Ribeiro Soluções - Todos os direitos reservados</p>
+  <!-- ===== PORTFÓLIO ===== -->
+  <section class="portfolio" id="portfolio">
+    <div class="section-header fade-up">
+      <h2>Nossos Projetos</h2>
+      <p>Conheça alguns dos projetos que realizamos com excelência.</p>
     </div>
+    <div class="portfolio-grid">
+      <div class="portfolio-item fade-up">
+        <img src="img/predial.png" alt="Projeto predial" loading="lazy">
+        <div class="portfolio-overlay"><h4>Edifício Comercial</h4><p>Instalação elétrica completa</p></div>
+      </div>
+      <div class="portfolio-item fade-up">
+        <img src="img/residencial.png" alt="Projeto residencial" loading="lazy">
+        <div class="portfolio-overlay"><h4>Residência Premium</h4><p>Automação e iluminação</p></div>
+      </div>
+      <div class="portfolio-item fade-up">
+        <img src="img/automacao.png" alt="Projeto automação" loading="lazy">
+        <div class="portfolio-overlay"><h4>Smart Home</h4><p>Automação residencial integrada</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DEPOIMENTOS + CERTIFICAÇÕES ===== -->
+  <section class="testimonials" id="depoimentos">
+    <div class="section-header fade-up">
+      <h2>O que Nossos Clientes Dizem</h2>
+      <p>A satisfação dos nossos clientes é a nossa melhor credencial.</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card fade-up">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <blockquote>"Excelente trabalho na instalação elétrica do nosso condomínio. Equipe profissional, pontual e com acabamento impecável."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">MF</div>
+          <div><div class="testimonial-name">Marcos Ferreira</div><div class="testimonial-role">Síndico — Cond. Parque das Águas</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card fade-up">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <blockquote>"A automação da minha casa superou todas as expectativas. Controlar tudo pelo celular mudou a forma como vivo."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">AS</div>
+          <div><div class="testimonial-name">Ana Silva</div><div class="testimonial-role">Cliente Residencial — Goiânia</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Badges de Certificação -->
+    <div class="badges fade-up">
+      <div class="badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        NR-10 Certificado
+      </div>
+      <div class="badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        CREA Registrado
+      </div>
+      <div class="badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21l3.5-2L9 21l3-3 3 3 2.5-2L21 21"/></svg>
+        Garantia de Serviço
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONTATO / CTA FINAL ===== -->
+  <section class="contact" id="contato">
+    <div class="contact-inner">
+      <h2 class="fade-up">Vamos Conversar?</h2>
+      <p class="fade-up" style="color:rgba(255,255,255,0.6);margin-bottom:3rem;font-size:1.05rem;">Solicite um orçamento sem compromisso. Retornamos em até 24 horas.</p>
+      <form class="contact-form fade-up" onsubmit="event.preventDefault();alert('Mensagem enviada! Entraremos em contato.')">
+        <input type="text" placeholder="Seu nome" required>
+        <input type="tel" placeholder="Seu telefone" required>
+        <input type="email" placeholder="Seu e-mail" style="grid-column:1/-1">
+        <textarea placeholder="Descreva seu projeto..." required></textarea>
+        <button type="submit" class="btn-primary">Enviar Mensagem</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <p>&copy; 2025 Ribeiro Soluções — Todos os direitos reservados</p>
   </footer>
 
-  <!-- Botão Flutuante WhatsApp -->
-  <a
-    href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento%20para%20servi%C3%A7os%20el%C3%A9tricos."
-    target="_blank" rel="noopener"
-    class="fixed bottom-6 right-6 bg-emerald-500 hover:bg-emerald-600 text-white p-4 rounded-full whatsapp-float transition-all z-50"
-    title="Fale conosco no WhatsApp"
-  >
-    <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/>
-    </svg>
+  <!-- ===== WHATSAPP FLOAT ===== -->
+  <a href="https://wa.me/5562996703106?text=Ol%C3%A1%2C%20gostaria%20de%20um%20or%C3%A7amento." target="_blank" rel="noopener" class="whatsapp-float" title="Fale conosco no WhatsApp" aria-label="WhatsApp">
+    <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488"/></svg>
   </a>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    // Header scroll effect
+    const header = document.getElementById('siteHeader');
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // Mobile menu toggle
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+      document.getElementById('headerNav').classList.toggle('open');
+    });
+
+    // Scroll reveal (Intersection Observer)
+    const revealEls = document.querySelectorAll('.fade-up');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 100);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    revealEls.forEach(el => revealObserver.observe(el));
+
+    // Counter animation
+    const counters = document.querySelectorAll('.counter');
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = +el.dataset.target;
+          const duration = 2000;
+          const start = performance.now();
+          const animate = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = '+' + Math.floor(eased * target);
+            if (progress < 1) requestAnimationFrame(animate);
+          };
+          requestAnimationFrame(animate);
+          counterObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.5 });
+    counters.forEach(el => counterObserver.observe(el));
+
+    // Close mobile nav on link click
+    document.querySelectorAll('.header-nav a').forEach(a => {
+      a.addEventListener('click', () => document.getElementById('headerNav').classList.remove('open'));
+    });
+  </script>
 
 </body>
 </html>
