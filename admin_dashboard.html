@@ -67,13 +67,35 @@
       header { flex-direction:column; align-items:flex-start; gap:10px; }
       .controls { width:100%; justify-content:space-between; }
     }
+    
+    /* LOGIN SCREEN */
+    #loginScreen { position:fixed; inset:0; background:linear-gradient(135deg,#0f172a,#1e293b); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; color:#fff; text-align:center; padding:20px; transition:opacity 0.3s; }
+    #loginScreen .logo { width:80px; height:80px; margin-bottom:20px; }
+    #loginScreen h2 { margin:0 0 10px 0; font-size:24px; }
+    #loginScreen p { color:#94a3b8; margin-bottom:30px; max-width: 400px;}
+    .btn-google { display:flex; align-items:center; gap:10px; background:#fff; color:#333; padding:12px 24px; border-radius:30px; font-weight:600; cursor:pointer; border:none; box-shadow:0 4px 12px rgba(0,0,0,0.2); transition:transform 0.2s; font-size:16px; margin: 0 auto; }
+    .btn-google:hover { transform:scale(1.05); }
+    .btn-google img { width:20px; height:20px; }
   </style>
 
   <!-- JSZip (CDN) — usado para baixar todas as imagens em um ZIP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
 </head>
 <body>
-  <div class="container">
+  <!-- TELA DE LOGIN DO FIREBASE -->
+  <div id="loginScreen">
+    <div class="logo"><img src="img/logo.PNG" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:12px;background:#fff;padding:8px;"/></div>
+    <h2>Painel Administrativo</h2>
+    <p>Área restrita de gerenciamento de portfólio. Faça login com o Google para continuar.</p>
+    <button class="btn-google" id="btnGoogleLogin">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Entrar com Google
+    </button>
+    <div id="loginMessage" style="color:#ef4444; margin-top:20px; max-width:400px; font-size:14px;"></div>
+    <a href="index.html" style="color:#94a3b8; margin-top:24px; text-decoration:none; font-size:14px; border-bottom: 1px dotted #94a3b8;">← Voltar para a Landing Page</a>
+  </div>
+
+  <div class="container" id="appContent" style="display:none;">
     <header>
       <div class="brand">
         <div class="logo" title="Troque aqui pelo seu logo">
@@ -91,8 +113,10 @@
       </div>
 
       <div class="controls">
+        <a href="index.html" class="btn" style="background:transparent; border:1px solid rgba(255,255,255,0.2); margin-right:8px;">← Voltar ao Site</a>
         <button class="btn" id="btnNewService">+ Novo Serviço</button>
         <button class="btn" id="btnClear" title="Limpar todos os serviços e imagens" style="background:#ef4444;">Limpar Dados</button>
+        <button class="btn ghost" id="btnLogout" style="margin-left:8px;">Sair</button>
       </div>
     </header>
 
@@ -503,7 +527,79 @@
        Obs: localStorage é por domínio; em hospedagem pública os dados persistirão por navegador/usuário.
 
        =================== */
+  </script>
 
+  <!-- FIREBASE MODULES & LOGIN LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 1️⃣ COLE SUAS CHAVES DO FIREBASE AQUI
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_4F2TyECIrT_rvKaKkgn5MDNfaEgmvrk",
+      authDomain: "my-ladingpage.firebaseapp.com",
+      projectId: "my-ladingpage",
+      storageBucket: "my-ladingpage.firebasestorage.app",
+      messagingSenderId: "511615222539",
+      appId: "1:511615222539:web:6d0b6597f96c1b6db4180e",
+      measurementId: "G-MPEJ8PYQZJ"
+    };
+
+    // 2️⃣ COLOQUE AQUI O SEU E-MAIL DO GOOGLE QUE VAI SER O ADMINISTRADOR
+    const emailAdmin = "helymail@gmail.com";
+
+    let app, auth, provider;
+
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      provider = new GoogleAuthProvider();
+    } catch(e) {
+      document.getElementById('loginMessage').textContent = "🚨 Configuração do Firebase incompleta. Abra o código e coloque as chaves do firebaseConfig.";
+    }
+
+    const loginScreen = document.getElementById('loginScreen');
+    const appContent = document.getElementById('appContent');
+    const bgGoogle = document.getElementById('btnGoogleLogin');
+    const msg = document.getElementById('loginMessage');
+    const btnLogout = document.getElementById('btnLogout');
+
+    if(auth) {
+      // Fica monitorando se o usuário está logado ou não
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          if(user.email === emailAdmin) {
+             loginScreen.style.display = 'none';
+             appContent.style.display = 'block';
+             msg.textContent = "";
+          } else {
+             msg.textContent = `Acesso negado. O e-mail ${user.email} não é administrador.`;
+             signOut(auth);
+          }
+        } else {
+          // Deslogado, mostra o bloqueio
+          loginScreen.style.display = 'flex';
+          appContent.style.display = 'none';
+        }
+      });
+
+      // Clicou para entrar
+      bgGoogle.addEventListener('click', () => {
+        msg.textContent = "Aguardando login no Google...";
+        signInWithPopup(auth, provider).catch(error => {
+           msg.textContent = "Erro ao logar: " + error.message;
+        });
+      });
+
+      // Clicou para sair
+      if(btnLogout) {
+         btnLogout.addEventListener('click', () => {
+           signOut(auth).then(()=> { 
+             alert("Sessão encerrada com sucesso."); 
+           });
+         });
+      }
+    }
   </script>
 </body>
 </html>
