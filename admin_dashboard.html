@@ -223,17 +223,17 @@
     }
 
     // ── Storage abstraction (Firebase RTDB + fallback localStorage) ──
-    let db = null; // será inicializado pelo módulo Firebase abaixo
-    let useFirebase = false;
+    window.portfolioDB = null; // será inicializado pelo módulo Firebase abaixo
+    window.portfolioUseFirebase = false;
 
     function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     // Ler dados
     async function loadServices() {
-      if (useFirebase && db) {
+      if (window.portfolioUseFirebase && window.portfolioDB) {
         try {
           const { ref, get } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
-          const snapshot = await get(ref(db, 'portfolio/services'));
+          const snapshot = await get(ref(window.portfolioDB, 'portfolio/services'));
           if (snapshot.exists()) {
             return Object.values(snapshot.val());
           }
@@ -255,13 +255,13 @@
         console.warn('localStorage cheio, usando apenas Firebase');
       }
 
-      if (useFirebase && db) {
+      if (window.portfolioUseFirebase && window.portfolioDB) {
         try {
           const { ref, set } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
           // Converter array para objeto com IDs como chaves
           const obj = {};
           data.forEach(s => { obj[s.id] = s; });
-          await set(ref(db, 'portfolio/services'), obj);
+          await set(ref(window.portfolioDB, 'portfolio/services'), obj);
           return true;
         } catch(e) {
           console.error('Firebase save error:', e);
@@ -334,7 +334,7 @@
       }
       renderGrid();
 
-      if (useFirebase) {
+      if (window.portfolioUseFirebase) {
         showStatus('✅ Conectado ao Firebase — imagens sincronizadas na nuvem', 'success');
       } else {
         showStatus('⚠️ Firebase indisponível — usando armazenamento local (limite ~5MB)', 'warning');
@@ -651,16 +651,11 @@
       auth = getAuth(app);
       provider = new GoogleAuthProvider();
 
-      // Inicializar Firebase Realtime Database e exportar para o script principal
+      // Inicializar Firebase Realtime Database
       const database = getDatabase(app);
-      window.__firebaseDB = database;
-      window.useFirebase = true;
-
-      // Atualizar as variáveis do script principal
-      if (typeof db !== 'undefined') {
-        db = database;
-        useFirebase = true;
-      }
+      window.portfolioDB = database;
+      window.portfolioUseFirebase = true;
+      console.log('✅ Firebase RTDB inicializado com sucesso');
     } catch(e) {
       console.error('Firebase init error:', e);
       document.getElementById('loginMessage').textContent = "🚨 Configuração do Firebase incompleta: " + e.message;
@@ -680,11 +675,7 @@
              appContent.style.display = 'block';
              msg.textContent = "";
 
-             // Conectar o RTDB ao script principal e inicializar
-             if (window.__firebaseDB) {
-               db = window.__firebaseDB;
-               useFirebase = true;
-             }
+             console.log('✅ Login OK — Iniciando app com Firebase:', !!window.portfolioDB);
              // Inicializar a aplicação (carregar dados do Firebase)
              initApp();
           } else {
