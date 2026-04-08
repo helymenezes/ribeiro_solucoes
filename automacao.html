@@ -4,8 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Automação - Galeria</title>
-  <!-- Troque o favicon abaixo se desejar -->
-  <!-- <link rel="icon" href="img/favicon.ico" /> -->
   <style>
     body { font-family: Inter, Arial, sans-serif; background:#f4f7fb; color:#0f172a; margin:0; }
     .container { max-width:900px; margin:32px auto; padding:16px; }
@@ -21,6 +19,8 @@
     .lightbox.show { opacity:1; pointer-events:auto; }
     .lightbox img { max-width:92vw; max-height:82vh; border-radius:8px; box-shadow:0 12px 40px rgba(2,6,23,0.6); }
     .lb-close { position:fixed; top:24px; right:32px; background:#ef4444; color:#fff; border:none; border-radius:8px; padding:10px 18px; font-size:16px; cursor:pointer; }
+    .loading { text-align:center; padding:40px; color:#64748b; font-size:16px; }
+    .empty { text-align:center; padding:40px; color:#94a3b8; font-size:15px; }
     @media (max-width:600px){ .grid{grid-template-columns:1fr;} .card img{height:120px;} }
   </style>
 </head>
@@ -28,15 +28,13 @@
   <div class="container">
     <header>
       <div class="logo">
-        <!-- Troque aqui pelo seu logo -->
         <img src="img/logo.PNG" alt="Logo" />
       </div>
       <h1>Automação</h1>
     </header>
     <h2 style="margin-bottom:18px;">Galeria de Imagens</h2>
     <div class="grid" id="gallery">
-      <!-- Adicione suas imagens abaixo -->
-      <!-- Exemplo: <div class="card"><img src="img/automacao1.jpg" alt="Automação 1"></div> -->
+      <div class="loading" id="loadingMsg">⏳ Carregando imagens...</div>
     </div>
     <a href="index.html" style="display:inline-block;margin-top:28px;color:#059669;font-weight:600;">← Voltar para página inicial</a>
   </div>
@@ -44,23 +42,94 @@
     <button class="lb-close" onclick="closeLightbox()">Fechar</button>
     <img id="lbImg" src="" alt="Imagem grande" />
   </div>
-  <script>
-    // Lightbox simples
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_4F2TyECIrT_rvKaKkgn5MDNfaEgmvrk",
+      authDomain: "my-ladingpage.firebaseapp.com",
+      databaseURL: "https://my-ladingpage-default-rtdb.firebaseio.com",
+      projectId: "my-ladingpage",
+      storageBucket: "my-ladingpage.firebasestorage.app",
+      messagingSenderId: "511615222539",
+      appId: "1:511615222539:web:6d0b6597f96c1b6db4180e"
+    };
+
+    const GALLERY_TITLE = "Automação";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
     const gallery = document.getElementById('gallery');
     const lightbox = document.getElementById('lightbox');
     const lbImg = document.getElementById('lbImg');
-    gallery.querySelectorAll('img').forEach(img => {
-      img.onclick = function(){
-        lbImg.src = this.src;
-        lightbox.classList.add('show');
-      };
-    });
-    function closeLightbox(){
+
+    async function loadGallery() {
+      try {
+        const snapshot = await get(ref(db, 'portfolio/services'));
+        if (snapshot.exists()) {
+          const services = Object.values(snapshot.val());
+          const service = services.find(s => s.title === GALLERY_TITLE);
+
+          gallery.innerHTML = '';
+
+          if (service && service.images && service.images.length > 0) {
+            service.images.forEach((dataURL, idx) => {
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.innerHTML = `<img src="${dataURL}" alt="${GALLERY_TITLE} ${idx + 1}">`;
+              card.querySelector('img').onclick = () => {
+                lbImg.src = dataURL;
+                lightbox.classList.add('show');
+              };
+              gallery.appendChild(card);
+            });
+          } else {
+            gallery.innerHTML = '<div class="empty">📷 Nenhuma imagem disponível nesta galeria.</div>';
+          }
+        } else {
+          gallery.innerHTML = '<div class="empty">📷 Nenhuma imagem disponível.</div>';
+        }
+      } catch(e) {
+        console.error('Erro ao carregar galeria:', e);
+        // Fallback: tentar localStorage
+        try {
+          const data = JSON.parse(localStorage.getItem('servicesData') || 'null');
+          if (data) {
+            const service = data.find(s => s.title === GALLERY_TITLE);
+            gallery.innerHTML = '';
+            if (service && service.images && service.images.length > 0) {
+              service.images.forEach((dataURL, idx) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<img src="${dataURL}" alt="${GALLERY_TITLE} ${idx + 1}">`;
+                card.querySelector('img').onclick = () => {
+                  lbImg.src = dataURL;
+                  lightbox.classList.add('show');
+                };
+                gallery.appendChild(card);
+              });
+            } else {
+              gallery.innerHTML = '<div class="empty">📷 Nenhuma imagem disponível.</div>';
+            }
+          } else {
+            gallery.innerHTML = '<div class="empty">📷 Nenhuma imagem disponível.</div>';
+          }
+        } catch(e2) {
+          gallery.innerHTML = '<div class="empty">❌ Erro ao carregar imagens.</div>';
+        }
+      }
+    }
+
+    window.closeLightbox = function() {
       lightbox.classList.remove('show');
       lbImg.src = '';
-    }
-    lightbox.onclick = function(e){ if(e.target===lightbox) closeLightbox(); };
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeLightbox(); });
+    };
+    lightbox.onclick = function(e) { if (e.target === lightbox) window.closeLightbox(); };
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') window.closeLightbox(); });
+
+    loadGallery();
   </script>
 </body>
 </html>

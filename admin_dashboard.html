@@ -174,35 +174,131 @@
     </div>
 
     <footer>
-      <small>Imagens armazenadas localmente no navegador (localStorage). <br/> Desenvolvido para uso offline simples.</small>
+      <small>Imagens sincronizadas com Firebase. Compressão automática ativada.</small>
     </footer>
   </div>
 
   <script>
     /* =====================
-       Estrutura de dados no localStorage:
-       key = "servicesData"
-       value = JSON.stringify(array de serviços)
-       serviço = { id: "uuid", title: "Instalações Prediais", images: [dataURL, ...] }
+       PORTFOLIO MANAGER — Firebase Realtime Database
+       Imagens são comprimidas (max 800px, JPEG 70%) e salvas no Firebase RTDB.
+       Fallback para localStorage se o Firebase não estiver disponível.
     ===================== */
 
-    // Utilitários
+    // ── Utilitários ──
     function uid() { return 's_' + Math.random().toString(36).slice(2,9); }
-    function readStorage(){ try { return JSON.parse(localStorage.getItem('servicesData')||'null')||null; } catch(e){ return null; } }
-    function saveStorage(data){ localStorage.setItem('servicesData', JSON.stringify(data)); }
 
-    // Inicializar dados padrão se não existir
-    let services = readStorage();
-    if(!services){
-      services = [
-        { id: uid(), title: 'Instalações Prediais', images: [] },
-        { id: uid(), title: 'Residenciais', images: [] },
-        { id: uid(), title: 'Automação', images: [] }
-      ];
-      saveStorage(services);
+    // ── Compressão de imagem via Canvas ──
+    function compressImage(file, maxWidth = 800, quality = 0.7) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width;
+            let h = img.height;
+
+            // Redimensionar mantendo proporção
+            if (w > maxWidth) {
+              h = Math.round((h * maxWidth) / w);
+              w = maxWidth;
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+
+            // Converter para JPEG comprimido
+            const dataURL = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataURL);
+          };
+          img.onerror = () => reject(new Error('Erro ao processar imagem'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+        reader.readAsDataURL(file);
+      });
     }
 
-    // Elementos
+    // ── Storage abstraction (Firebase RTDB + fallback localStorage) ──
+    let db = null; // será inicializado pelo módulo Firebase abaixo
+    let useFirebase = false;
+
+    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Ler dados
+    async function loadServices() {
+      if (useFirebase && db) {
+        try {
+          const { ref, get } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+          const snapshot = await get(ref(db, 'portfolio/services'));
+          if (snapshot.exists()) {
+            return Object.values(snapshot.val());
+          }
+          return null;
+        } catch(e) {
+          console.error('Firebase read error:', e);
+          return readLocalStorage();
+        }
+      }
+      return readLocalStorage();
+    }
+
+    // Salvar dados
+    async function saveServices(data) {
+      // Sempre salvar no localStorage como backup
+      try {
+        localStorage.setItem('servicesData', JSON.stringify(data));
+      } catch(e) {
+        console.warn('localStorage cheio, usando apenas Firebase');
+      }
+
+      if (useFirebase && db) {
+        try {
+          const { ref, set } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+          // Converter array para objeto com IDs como chaves
+          const obj = {};
+          data.forEach(s => { obj[s.id] = s; });
+          await set(ref(db, 'portfolio/services'), obj);
+          return true;
+        } catch(e) {
+          console.error('Firebase save error:', e);
+          showStatus('⚠️ Erro ao salvar no Firebase: ' + e.message, 'error');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function readLocalStorage() {
+      try { return JSON.parse(localStorage.getItem('servicesData') || 'null') || null; }
+      catch(e) { return null; }
+    }
+
+    // ── Status feedback ──
+    function showStatus(msg, type = 'success') {
+      let statusEl = document.getElementById('statusBar');
+      if (!statusEl) {
+        statusEl = document.createElement('div');
+        statusEl.id = 'statusBar';
+        statusEl.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:12px 20px;text-align:center;font-weight:600;font-size:14px;z-index:10000;transition:transform 0.3s ease;transform:translateY(-100%);';
+        document.body.appendChild(statusEl);
+      }
+      statusEl.style.background = type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#059669';
+      statusEl.style.color = '#fff';
+      statusEl.textContent = msg;
+      statusEl.style.transform = 'translateY(0)';
+      setTimeout(() => { statusEl.style.transform = 'translateY(-100%)'; }, 4000);
+    }
+
+    // ── Variáveis globais ──
+    let services = [];
+    let currentServiceId = null;
+    let currentIndex = 0;
+
+    // ── Elementos do DOM ──
     const grid = document.getElementById('servicesGrid');
     const listView = document.getElementById('listView');
     const serviceView = document.getElementById('serviceView');
@@ -225,31 +321,46 @@
     const lbNext = document.getElementById('lbNext');
     const lbClose = document.getElementById('lbClose');
 
-    let currentServiceId = null;
-    let currentIndex = 0;
+    // ── Inicialização ──
+    async function initApp() {
+      services = await loadServices();
+      if (!services) {
+        services = [
+          { id: uid(), title: 'Instalações Prediais', images: [] },
+          { id: uid(), title: 'Residenciais', images: [] },
+          { id: uid(), title: 'Automação', images: [] }
+        ];
+        await saveServices(services);
+      }
+      renderGrid();
 
-    // Renderiza grade de serviços
-    function renderGrid(){
+      if (useFirebase) {
+        showStatus('✅ Conectado ao Firebase — imagens sincronizadas na nuvem', 'success');
+      } else {
+        showStatus('⚠️ Firebase indisponível — usando armazenamento local (limite ~5MB)', 'warning');
+      }
+    }
+
+    // ── Renderizar grid de serviços ──
+    function renderGrid() {
       grid.innerHTML = '';
       services.forEach(s => {
         const el = document.createElement('div');
         el.className = 'card';
         el.innerHTML = `
           <h3>${escapeHtml(s.title)}</h3>
-          <p>${s.images.length} imagem(s)</p>
+          <p>${(s.images || []).length} imagem(s)</p>
         `;
-        el.addEventListener('click',()=> openService(s.id));
+        el.addEventListener('click', () => openService(s.id));
         grid.appendChild(el);
       });
     }
 
-    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-    // Abrir page do serviço (single page navigation)
-    function openService(id){
+    // ── Abrir serviço ──
+    function openService(id) {
       currentServiceId = id;
-      const s = services.find(x=>x.id===id);
-      if(!s) return alert('Serviço não encontrado');
+      const s = services.find(x => x.id === id);
+      if (!s) return alert('Serviço não encontrado');
       serviceTitleView.textContent = s.title;
       titleInput.value = s.title;
       listView.style.display = 'none';
@@ -257,102 +368,138 @@
       renderThumbs();
     }
 
-    // Voltar para lista
-    btnBack.addEventListener('click',()=>{
+    // ── Voltar ──
+    btnBack.addEventListener('click', () => {
       serviceView.style.display = 'none';
       listView.style.display = 'block';
       currentServiceId = null;
     });
 
-    // Salvar título
-    btnSaveTitle.addEventListener('click',()=>{
-      if(!currentServiceId) return;
+    // ── Salvar título ──
+    btnSaveTitle.addEventListener('click', async () => {
+      if (!currentServiceId) return;
       const newTitle = titleInput.value.trim() || 'Serviço sem título';
-      const s = services.find(x=>x.id===currentServiceId);
+      const s = services.find(x => x.id === currentServiceId);
       s.title = newTitle;
-      saveStorage(services);
-      renderGrid();
-      serviceTitleView.textContent = s.title;
-      alert('Título salvo.');
+      const ok = await saveServices(services);
+      if (ok) {
+        renderGrid();
+        serviceTitleView.textContent = s.title;
+        showStatus('✅ Título salvo com sucesso!');
+      }
     });
 
-    // Novo serviço
-    btnNewService.addEventListener('click',()=>{
+    // ── Novo serviço ──
+    btnNewService.addEventListener('click', async () => {
       const title = prompt('Título do novo serviço:', 'Novo Serviço');
-      if(title === null) return;
+      if (title === null) return;
       const s = { id: uid(), title: title.trim() || 'Novo Serviço', images: [] };
       services.unshift(s);
-      saveStorage(services);
+      await saveServices(services);
       renderGrid();
       openService(s.id);
     });
 
-    // Limpar todos os dados
-    btnClear.addEventListener('click',()=>{
-      if(!confirm('Excluir TODOS os serviços e imagens salvos localmente?')) return;
-      localStorage.removeItem('servicesData');
+    // ── Limpar dados ──
+    btnClear.addEventListener('click', async () => {
+      if (!confirm('Excluir TODOS os serviços e imagens?')) return;
+
       services = [
         { id: uid(), title: 'Instalações Prediais', images: [] },
         { id: uid(), title: 'Residenciais', images: [] },
         { id: uid(), title: 'Automação', images: [] }
       ];
-      saveStorage(services);
+
+      localStorage.removeItem('servicesData');
+      await saveServices(services);
       renderGrid();
-      // voltar à lista
       serviceView.style.display = 'none';
       listView.style.display = 'block';
-      alert('Dados limpos.');
+      showStatus('🗑️ Dados limpos com sucesso.');
     });
 
-    /* ========== UPLOAD (drag & drop + file input) ========== */
-    function handleFiles(fileList){
-      if(!currentServiceId) { alert('Abra um serviço antes de enviar imagens.'); return; }
-      const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
-      if(files.length === 0) return alert('Nenhuma imagem selecionada.');
-      const s = services.find(x=>x.id===currentServiceId);
-      let readCount = 0;
-      files.forEach(file=>{
-        const reader = new FileReader();
-        reader.onload = (e)=>{
-          // Armazenar dataURL
-          s.images.push(e.target.result);
-          readCount++;
-          if(readCount === files.length){
-            saveStorage(services);
-            renderThumbs();
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+    /* ========== UPLOAD — com compressão e progresso ========== */
+    async function handleFiles(fileList) {
+      if (!currentServiceId) { alert('Abra um serviço antes de enviar imagens.'); return; }
+      const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      if (files.length === 0) return alert('Nenhuma imagem válida selecionada.');
+
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s.images) s.images = [];
+
+      // Feedback visual de progresso
+      const progressEl = document.createElement('div');
+      progressEl.style.cssText = 'margin-top:10px;padding:12px;background:#ecfdf5;border-radius:8px;font-size:14px;font-weight:600;color:#059669;';
+      progressEl.textContent = `📤 Comprimindo 0/${files.length}...`;
+      uploadArea.appendChild(progressEl);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        try {
+          progressEl.textContent = `📤 Comprimindo ${i + 1}/${files.length}... (${files[i].name})`;
+
+          // Comprimir a imagem (max 800px, JPEG 70%)
+          const compressed = await compressImage(files[i], 800, 0.7);
+
+          s.images.push(compressed);
+          successCount++;
+        } catch (err) {
+          console.error('Erro ao comprimir:', files[i].name, err);
+          errorCount++;
+        }
+      }
+
+      // Salvar no Firebase/localStorage
+      progressEl.textContent = '💾 Salvando no servidor...';
+      const ok = await saveServices(services);
+
+      // Limpar progresso
+      progressEl.remove();
+
+      if (ok && successCount > 0) {
+        showStatus(`✅ ${successCount} imagem(s) enviada(s) com sucesso!${errorCount ? ` (${errorCount} falha(s))` : ''}`);
+        renderThumbs();
+        renderGrid();
+      } else if (!ok) {
+        // Reverter as imagens adicionadas
+        s.images.splice(s.images.length - successCount, successCount);
+        showStatus('❌ Erro ao salvar. Verifique a conexão com o Firebase.', 'error');
+      }
+
+      // Resetar o input de arquivo
+      fileInput.value = '';
     }
 
-    // Drag events
-    ['dragenter','dragover'].forEach(ev=>{
-      uploadArea.addEventListener(ev,(e)=>{ e.preventDefault(); e.stopPropagation(); uploadArea.classList.add('dragover'); });
+    // ── Drag & Drop ──
+    ['dragenter', 'dragover'].forEach(ev => {
+      uploadArea.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); uploadArea.classList.add('dragover'); });
     });
-    ['dragleave','drop'].forEach(ev=>{
-      uploadArea.addEventListener(ev,(e)=>{ e.preventDefault(); e.stopPropagation(); uploadArea.classList.remove('dragover'); });
+    ['dragleave', 'drop'].forEach(ev => {
+      uploadArea.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); uploadArea.classList.remove('dragover'); });
     });
-    uploadArea.addEventListener('drop',(e)=>{
+    uploadArea.addEventListener('drop', (e) => {
       const dt = e.dataTransfer;
-      if(dt && dt.files) handleFiles(dt.files);
+      if (dt && dt.files) handleFiles(dt.files);
     });
 
-    btnSelectFiles.addEventListener('click',()=> fileInput.click());
-    fileInput.addEventListener('change',()=> handleFiles(fileInput.files));
+    btnSelectFiles.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 
-    // Renderizar thumbnails da galeria do serviço
-    function renderThumbs(){
+    // ── Renderizar thumbnails ──
+    function renderThumbs() {
       thumbs.innerHTML = '';
-      const s = services.find(x=>x.id===currentServiceId);
-      if(!s) return;
-      s.images.forEach((dataURL, idx)=>{
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s || !s.images) return;
+
+      s.images.forEach((dataURL, idx) => {
         const d = document.createElement('div');
         d.className = 'thumb';
         d.innerHTML = `
-          <img src="${dataURL}" alt="imagem ${idx+1}" />
+          <img src="${dataURL}" alt="imagem ${idx + 1}" />
           <div class="meta">
-            <span>${idx+1}</span>
+            <span>${idx + 1}</span>
             <span style="display:flex; gap:6px;">
               <button title="Visualizar" data-idx="${idx}" style="background:#06b6d4; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">Ver</button>
               <button title="Baixar" data-download="${idx}" style="background:#059669; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">Baixar</button>
@@ -363,181 +510,130 @@
         thumbs.appendChild(d);
       });
 
-      // delegação de eventos para thumbs
+      // Eventos dos botões
       thumbs.querySelectorAll('button[title="Visualizar"]').forEach(b => {
-        b.onclick = (e)=> { openLightbox(parseInt(e.currentTarget.getAttribute('data-idx'),10)); };
+        b.onclick = (e) => { openLightbox(parseInt(e.currentTarget.getAttribute('data-idx'), 10)); };
       });
       thumbs.querySelectorAll('button[data-download]').forEach(b => {
-        b.onclick = (e)=> {
-          const idx = parseInt(e.currentTarget.getAttribute('data-download'),10);
+        b.onclick = (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute('data-download'), 10);
           downloadImageByIndex(idx);
         };
       });
       thumbs.querySelectorAll('button[data-remove]').forEach(b => {
-        b.onclick = (e)=> {
-          const idx = parseInt(e.currentTarget.getAttribute('data-remove'),10);
+        b.onclick = (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute('data-remove'), 10);
           removeImageByIndex(idx);
         };
       });
     }
 
-    // Remover imagem
-    function removeImageByIndex(idx){
-      const s = services.find(x=>x.id===currentServiceId);
-      if(!s) return;
-      if(!confirm('Remover esta imagem?')) return;
-      s.images.splice(idx,1);
-      saveStorage(services);
+    // ── Remover imagem ──
+    async function removeImageByIndex(idx) {
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s) return;
+      if (!confirm('Remover esta imagem?')) return;
+      s.images.splice(idx, 1);
+      await saveServices(services);
       renderThumbs();
+      renderGrid();
+      showStatus('🗑️ Imagem removida.');
     }
 
-    // Baixar imagem individual
-    function downloadImageByIndex(idx){
-      const s = services.find(x=>x.id===currentServiceId);
-      if(!s) return;
+    // ── Baixar imagem individual ──
+    function downloadImageByIndex(idx) {
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s) return;
       const dataURL = s.images[idx];
-      if(!dataURL) return;
+      if (!dataURL) return;
       const a = document.createElement('a');
       a.href = dataURL;
-      a.download = `${s.title.replace(/\s+/g,'_')}_${idx+1}.png`;
+      a.download = `${s.title.replace(/\s+/g, '_')}_${idx + 1}.jpg`;
       document.body.appendChild(a);
       a.click();
       a.remove();
     }
 
-    // Baixar todas as imagens (ZIP) usando JSZip
-    btnDownloadAll.addEventListener('click', async ()=>{
-      const s = services.find(x=>x.id===currentServiceId);
-      if(!s) return;
-      if(!s.images.length) return alert('Nenhuma imagem para baixar.');
+    // ── Baixar todas (ZIP) ──
+    btnDownloadAll.addEventListener('click', async () => {
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s) return;
+      if (!s.images || !s.images.length) return alert('Nenhuma imagem para baixar.');
       const zip = new JSZip();
-      // converter dataURL para blob e adicionar ao zip
-      for(let i=0;i<s.images.length;i++){
+      for (let i = 0; i < s.images.length; i++) {
         const dataURL = s.images[i];
         const blob = dataURLToBlob(dataURL);
-        zip.file(`${s.title.replace(/\s+/g,'_')}_${i+1}.png`, blob);
+        zip.file(`${s.title.replace(/\s+/g, '_')}_${i + 1}.jpg`, blob);
       }
-      const content = await zip.generateAsync({type:"blob"});
+      const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${s.title.replace(/\s+/g,'_')}_imagens.zip`;
+      a.download = `${s.title.replace(/\s+/g, '_')}_imagens.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     });
 
-    function dataURLToBlob(dataURL){
+    function dataURLToBlob(dataURL) {
       const parts = dataURL.split(',');
       const mime = parts[0].match(/:(.*?);/)[1];
       const bstr = atob(parts[1]);
       let n = bstr.length;
       const u8arr = new Uint8Array(n);
-      while(n--) u8arr[n] = bstr.charCodeAt(n);
-      return new Blob([u8arr], {type:mime});
+      while (n--) u8arr[n] = bstr.charCodeAt(n);
+      return new Blob([u8arr], { type: mime });
     }
 
-    // Excluir todas as imagens do serviço atual
-    btnDeleteAll.addEventListener('click',()=>{
-      if(!currentServiceId) return;
-      if(!confirm('Excluir TODAS as imagens deste serviço?')) return;
-      const s = services.find(x=>x.id===currentServiceId);
+    // ── Excluir todas as imagens do serviço ──
+    btnDeleteAll.addEventListener('click', async () => {
+      if (!currentServiceId) return;
+      if (!confirm('Excluir TODAS as imagens deste serviço?')) return;
+      const s = services.find(x => x.id === currentServiceId);
       s.images = [];
-      saveStorage(services);
+      await saveServices(services);
       renderThumbs();
+      renderGrid();
+      showStatus('🗑️ Todas as imagens removidas.');
     });
 
-    /* ========== LIGHTBOX FUNCIONALIDADE ========== */
-    function openLightbox(idx){
-      const s = services.find(x=>x.id===currentServiceId);
-      if(!s || !s.images.length) return;
+    /* ========== LIGHTBOX ========== */
+    function openLightbox(idx) {
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s || !s.images || !s.images.length) return;
       currentIndex = idx;
       lbImage.src = s.images[currentIndex];
       lightbox.classList.add('show');
-      lightbox.setAttribute('aria-hidden','false');
+      lightbox.setAttribute('aria-hidden', 'false');
     }
-    function closeLightbox(){ lightbox.classList.remove('show'); lightbox.setAttribute('aria-hidden','true'); }
-    function lbNextImg(){ const s = services.find(x=>x.id===currentServiceId); if(!s) return; currentIndex = (currentIndex+1) % s.images.length; lbImage.src = s.images[currentIndex]; }
-    function lbPrevImg(){ const s = services.find(x=>x.id===currentServiceId); if(!s) return; currentIndex = (currentIndex-1 + s.images.length) % s.images.length; lbImage.src = s.images[currentIndex]; }
+    function closeLightbox() { lightbox.classList.remove('show'); lightbox.setAttribute('aria-hidden', 'true'); }
+    function lbNextImg() { const s = services.find(x => x.id === currentServiceId); if (!s) return; currentIndex = (currentIndex + 1) % s.images.length; lbImage.src = s.images[currentIndex]; }
+    function lbPrevImg() { const s = services.find(x => x.id === currentServiceId); if (!s) return; currentIndex = (currentIndex - 1 + s.images.length) % s.images.length; lbImage.src = s.images[currentIndex]; }
 
     lbClose.addEventListener('click', closeLightbox);
     lbNext.addEventListener('click', lbNextImg);
     lbPrev.addEventListener('click', lbPrevImg);
-    lightbox.addEventListener('click', (e)=>{ if(e.target === lightbox) closeLightbox(); });
-    document.addEventListener('keydown', (e)=> {
-      if(lightbox.classList.contains('show')){
-        if(e.key === 'Escape') closeLightbox();
-        if(e.key === 'ArrowRight') lbNextImg();
-        if(e.key === 'ArrowLeft') lbPrevImg();
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e) => {
+      if (lightbox.classList.contains('show')) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') lbNextImg();
+        if (e.key === 'ArrowLeft') lbPrevImg();
       }
     });
-
-    // Render inicial
-    renderGrid();
-
-    // Rota simples via hash (opcional): se o hash for #service:id abre o serviço
-    window.addEventListener('hashchange',()=>{
-      const h = location.hash;
-      if(h.startsWith('#service:')){
-        const id = h.replace('#service:','');
-        const s = services.find(x=>x.id===id);
-        if(s) openService(id);
-      } else {
-        // voltar para lista
-        serviceView.style.display = 'none';
-        listView.style.display = 'block';
-      }
-    });
-
-    // Suporte para abrir service e atualizar URL
-    function openServiceWithHash(id){
-      location.hash = 'service:' + id;
-      openService(id);
-    }
-    // Rebind cards to new function that also updates hash:
-    function renderGrid(){
-      grid.innerHTML = '';
-      services.forEach(s => {
-        const el = document.createElement('div');
-        el.className = 'card';
-        el.innerHTML = `
-          <h3>${escapeHtml(s.title)}</h3>
-          <p>${s.images.length} imagem(s)</p>
-        `;
-        el.addEventListener('click',()=> openServiceWithHash(s.id));
-        grid.appendChild(el);
-      });
-    }
-    // Re-render inicial
-    renderGrid();
-
-    /* ===================
-       Instruções curtas de hospedagem:
-
-       - Localmente:
-         1) Salve este arquivo como index.html.
-         2) Abra no navegador (duplo clique) OU para evitar restrições use um servidor simples:
-            - No Windows PowerShell: Serve via Python 3: `python -m http.server 5500`
-            - Em seguida acesse: http://localhost:5500
-
-       - Netlify / outros hosts estáticos:
-         1) Faça o deploy do arquivo index.html (e se tiver assets, coloque-os na mesma pasta).
-         2) Netlify, Vercel ou GitHub Pages aceitam diretamente o arquivo (arraste e solte no painel ou faça push do repositório).
-       Obs: localStorage é por domínio; em hospedagem pública os dados persistirão por navegador/usuário.
-
-       =================== */
   </script>
 
-  <!-- FIREBASE MODULES & LOGIN LOGIC -->
+  <!-- FIREBASE MODULES & LOGIN LOGIC + RTDB -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 1️⃣ COLE SUAS CHAVES DO FIREBASE AQUI
     const firebaseConfig = {
       apiKey: "AIzaSyD_4F2TyECIrT_rvKaKkgn5MDNfaEgmvrk",
       authDomain: "my-ladingpage.firebaseapp.com",
+      databaseURL: "https://my-ladingpage-default-rtdb.firebaseio.com",
       projectId: "my-ladingpage",
       storageBucket: "my-ladingpage.firebasestorage.app",
       messagingSenderId: "511615222539",
@@ -545,7 +641,7 @@
       measurementId: "G-MPEJ8PYQZJ"
     };
 
-    // 2️⃣ COLOQUE AQUI O SEU E-MAIL DO GOOGLE QUE VAI SER O ADMINISTRADOR
+    // E-mail do administrador
     const emailAdmin = "helymail@gmail.com";
 
     let app, auth, provider;
@@ -554,36 +650,53 @@
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       provider = new GoogleAuthProvider();
+
+      // Inicializar Firebase Realtime Database e exportar para o script principal
+      const database = getDatabase(app);
+      window.__firebaseDB = database;
+      window.useFirebase = true;
+
+      // Atualizar as variáveis do script principal
+      if (typeof db !== 'undefined') {
+        db = database;
+        useFirebase = true;
+      }
     } catch(e) {
-      document.getElementById('loginMessage').textContent = "🚨 Configuração do Firebase incompleta. Abra o código e coloque as chaves do firebaseConfig.";
+      console.error('Firebase init error:', e);
+      document.getElementById('loginMessage').textContent = "🚨 Configuração do Firebase incompleta: " + e.message;
     }
 
     const loginScreen = document.getElementById('loginScreen');
     const appContent = document.getElementById('appContent');
     const bgGoogle = document.getElementById('btnGoogleLogin');
     const msg = document.getElementById('loginMessage');
-    const btnLogout = document.getElementById('btnLogout');
+    const btnLogoutEl = document.getElementById('btnLogout');
 
     if(auth) {
-      // Fica monitorando se o usuário está logado ou não
       onAuthStateChanged(auth, (user) => {
         if (user) {
           if(user.email === emailAdmin) {
              loginScreen.style.display = 'none';
              appContent.style.display = 'block';
              msg.textContent = "";
+
+             // Conectar o RTDB ao script principal e inicializar
+             if (window.__firebaseDB) {
+               db = window.__firebaseDB;
+               useFirebase = true;
+             }
+             // Inicializar a aplicação (carregar dados do Firebase)
+             initApp();
           } else {
              msg.textContent = `Acesso negado. O e-mail ${user.email} não é administrador.`;
              signOut(auth);
           }
         } else {
-          // Deslogado, mostra o bloqueio
           loginScreen.style.display = 'flex';
           appContent.style.display = 'none';
         }
       });
 
-      // Clicou para entrar
       bgGoogle.addEventListener('click', () => {
         msg.textContent = "Aguardando login no Google...";
         signInWithPopup(auth, provider).catch(error => {
@@ -591,10 +704,9 @@
         });
       });
 
-      // Clicou para sair
-      if(btnLogout) {
-         btnLogout.addEventListener('click', () => {
-           signOut(auth).then(()=> { 
+      if(btnLogoutEl) {
+         btnLogoutEl.addEventListener('click', () => {
+           signOut(auth).then(() => { 
              alert("Sessão encerrada com sucesso."); 
            });
          });
