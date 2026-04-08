@@ -68,6 +68,18 @@
       .controls { width:100%; justify-content:space-between; }
     }
     
+    /* STATS CARD */
+    .stats-card { background:linear-gradient(135deg,#0f2744,#0c3460); border-radius:14px; padding:20px 24px; margin-top:18px; display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:start; border:1px solid rgba(255,255,255,0.07); }
+    .stats-numbers { display:flex; gap:32px; align-items:center; flex-wrap:wrap; }
+    .stats-card .stat { color:#fff; }
+    .stats-card .stat-value { font-size:34px; font-weight:700; line-height:1; color:#38bdf8; }
+    .stats-card .stat-label { font-size:11px; opacity:0.6; margin-top:5px; text-transform:uppercase; letter-spacing:.07em; color:#fff; }
+    .stats-card .stat-icon { font-size:30px; opacity:0.5; align-self:center; margin-right:4px; }
+    .chart-wrap { background:rgba(255,255,255,0.04); border-radius:10px; padding:12px 14px; min-height:110px; }
+    .chart-wrap canvas { display:block; width:100% !important; height:110px !important; }
+    .chart-title { font-size:11px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
+    @media(max-width:720px){ .stats-card { grid-template-columns:1fr; } }
+
     /* LOGIN SCREEN */
     #loginScreen { position:fixed; inset:0; background:linear-gradient(135deg,#0f172a,#1e293b); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; color:#fff; text-align:center; padding:20px; transition:opacity 0.3s; }
     #loginScreen .logo { width:80px; height:80px; margin-bottom:20px; }
@@ -78,8 +90,10 @@
     .btn-google img { width:20px; height:20px; }
   </style>
 
-  <!-- JSZip (CDN) — usado para baixar todas as imagens em um ZIP -->
+  <!-- JSZip (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <!-- TELA DE LOGIN DO FIREBASE -->
@@ -119,6 +133,31 @@
         <button class="btn ghost" id="btnLogout" style="margin-left:8px;">Sair</button>
       </div>
     </header>
+
+    <!-- CARD DE ESTATÍSTICAS DE VISITAS + GRÁFICO -->
+    <div class="stats-card" id="statsCard">
+      <!-- Números -->
+      <div class="stats-numbers">
+        <div class="stat-icon">👁️</div>
+        <div class="stat">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Visitas totais</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statHoje">—</div>
+          <div class="stat-label">Hoje</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statUltima" style="font-size:14px; padding-top:4px;">—</div>
+          <div class="stat-label">Última visita</div>
+        </div>
+      </div>
+      <!-- Gráfico -->
+      <div class="chart-wrap">
+        <div class="chart-title">Visitas — últimos 30 dias</div>
+        <canvas id="visitChart"></canvas>
+      </div>
+    </div>
 
     <!-- VISTA: LISTA DE SERVIÇOS -->
     <section id="listView" class="main-view">
@@ -529,10 +568,11 @@
        =================== */
   </script>
 
-  <!-- FIREBASE MODULES & LOGIN LOGIC -->
+  <!-- FIREBASE MODULES & LOGIN LOGIC + REALTIME DATABASE STATS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // 1️⃣ COLE SUAS CHAVES DO FIREBASE AQUI
     const firebaseConfig = {
@@ -542,21 +582,134 @@
       storageBucket: "my-ladingpage.firebasestorage.app",
       messagingSenderId: "511615222539",
       appId: "1:511615222539:web:6d0b6597f96c1b6db4180e",
-      measurementId: "G-MPEJ8PYQZJ"
+      measurementId: "G-MPEJ8PYQZJ",
+      databaseURL: "https://my-ladingpage-default-rtdb.firebaseio.com"
     };
 
-    // 2️⃣ COLOQUE AQUI O SEU E-MAIL DO GOOGLE QUE VAI SER O ADMINISTRADOR
-    const emailAdmin = "helymail@gmail.com";
+    // 2️⃣ E-MAILS AUTORIZADOS COMO ADMINISTRADORES
+    const emailsAdmin = [
+      "helymail@gmail.com",
+      "ribeirosolucoeseletric@gmail.com"
+    ];
 
-    let app, auth, provider;
+    let app, auth, provider, db;
 
     try {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
+      db = getDatabase(app);
       provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
     } catch(e) {
       document.getElementById('loginMessage').textContent = "🚨 Configuração do Firebase incompleta. Abra o código e coloque as chaves do firebaseConfig.";
     }
+
+    // Inicia o listener de estatísticas em tempo real
+    let statsUnsubscribe = null;
+    let visitChartInstance = null;
+
+    function getDateKey(d) {
+      return d.toISOString().slice(0,10); // "2026-04-05"
+    }
+
+    function getLast30Days() {
+      const days = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(getDateKey(d));
+      }
+      return days;
+    }
+
+    function renderChart(dailyData) {
+      const days = getLast30Days();
+      const labels = days.map(d => {
+        const [,m,day] = d.split('-');
+        return `${day}/${m}`;
+      });
+      const values = days.map(d => dailyData[d] || 0);
+
+      const ctx = document.getElementById('visitChart').getContext('2d');
+      if (visitChartInstance) visitChartInstance.destroy();
+
+      visitChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Visitas',
+            data: values,
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56,189,248,0.12)',
+            pointBackgroundColor: '#38bdf8',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.4,
+            fill: true,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.parsed.y} visita(s)`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color:'rgba(255,255,255,0.4)', font:{size:9}, maxRotation:0 },
+              grid: { color:'rgba(255,255,255,0.05)' }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color:'rgba(255,255,255,0.4)', font:{size:9}, stepSize:1, precision:0 },
+              grid: { color:'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      });
+    }
+
+    function startStatsListener() {
+      if (!db || statsUnsubscribe) return;
+      const statsRef = ref(db, "stats/visitas");
+      statsUnsubscribe = onValue(statsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          // Total
+          document.getElementById('statTotal').textContent = (data.total || 0).toLocaleString('pt-BR');
+          // Hoje
+          const todayKey = getDateKey(new Date());
+          const hoje = data.dias?.[todayKey] ?? 0;
+          document.getElementById('statHoje').textContent = hoje.toLocaleString('pt-BR');
+          // Última visita
+          if (data.ultimaVisita) {
+            const ts = new Date(data.ultimaVisita);
+            document.getElementById('statUltima').textContent = ts.toLocaleString('pt-BR', {
+              day: '2-digit', month: '2-digit', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+          }
+          // Gráfico
+          renderChart(data.dias || {});
+        } else {
+          document.getElementById('statTotal').textContent = '0';
+          document.getElementById('statHoje').textContent = '0';
+          document.getElementById('statUltima').textContent = '—';
+          renderChart({});
+        }
+      }, () => {
+        document.getElementById('statTotal').textContent = 'N/D';
+      });
+    }
+
 
     const loginScreen = document.getElementById('loginScreen');
     const appContent = document.getElementById('appContent');
@@ -565,39 +718,69 @@
     const btnLogout = document.getElementById('btnLogout');
 
     if(auth) {
-      // Fica monitorando se o usuário está logado ou não
+      // Restaura sessão ao recarregar a página
       onAuthStateChanged(auth, (user) => {
         if (user) {
-          if(user.email === emailAdmin) {
-             loginScreen.style.display = 'none';
-             appContent.style.display = 'block';
-             msg.textContent = "";
-          } else {
-             msg.textContent = `Acesso negado. O e-mail ${user.email} não é administrador.`;
-             signOut(auth);
+          const email = user.email || user.providerData?.[0]?.email || null;
+          if (email && emailsAdmin.includes(email)) {
+            loginScreen.style.display = 'none';
+            appContent.style.display = 'block';
+            msg.textContent = "";
+            startStatsListener(); // ativa contador em tempo real
+          } else if (email) {
+            msg.textContent = `Acesso negado. O e-mail "${email}" não tem permissão de administrador.`;
+            signOut(auth);
           }
+          // se email ainda for null, aguarda o signInWithPopup resolver
         } else {
-          // Deslogado, mostra o bloqueio
+          // Sem sessão ativa — mostra tela de login
           loginScreen.style.display = 'flex';
           appContent.style.display = 'none';
         }
       });
 
-      // Clicou para entrar
-      bgGoogle.addEventListener('click', () => {
+      // Clicou para entrar com o Google
+      bgGoogle.addEventListener('click', async () => {
         msg.textContent = "Aguardando login no Google...";
-        signInWithPopup(auth, provider).catch(error => {
-           msg.textContent = "Erro ao logar: " + error.message;
-        });
+        bgGoogle.disabled = true;
+        try {
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+          const email = user.email || user.providerData?.[0]?.email || null;
+
+          if (!email) {
+            msg.textContent = "Não foi possível obter o e-mail. Tente novamente.";
+            await signOut(auth);
+            return;
+          }
+
+          if (emailsAdmin.includes(email)) {
+            loginScreen.style.display = 'none';
+            appContent.style.display = 'block';
+            msg.textContent = "";
+            startStatsListener(); // ativa contador em tempo real
+          } else {
+            msg.textContent = `Acesso negado. O e-mail "${email}" não tem permissão de administrador.`;
+            await signOut(auth);
+          }
+        } catch (error) {
+          if (error.code !== 'auth/popup-closed-by-user') {
+            msg.textContent = "Erro ao logar: " + error.message;
+          } else {
+            msg.textContent = "";
+          }
+        } finally {
+          bgGoogle.disabled = false;
+        }
       });
 
       // Clicou para sair
       if(btnLogout) {
-         btnLogout.addEventListener('click', () => {
-           signOut(auth).then(()=> { 
-             alert("Sessão encerrada com sucesso."); 
-           });
-         });
+        btnLogout.addEventListener('click', () => {
+          signOut(auth).then(() => {
+            alert("Sessão encerrada com sucesso.");
+          });
+        });
       }
     }
   </script>
