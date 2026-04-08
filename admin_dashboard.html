@@ -650,6 +650,8 @@
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
 
       // Inicializar Firebase Realtime Database
       const database = getDatabase(app);
@@ -670,7 +672,11 @@
     if(auth) {
       onAuthStateChanged(auth, (user) => {
         if (user) {
-          if(user.email === emailAdmin) {
+          // Obter email com fallback (providerData caso user.email seja null)
+          const userEmail = user.email || (user.providerData && user.providerData[0] && user.providerData[0].email) || null;
+          console.log('🔑 Email detectado:', userEmail);
+
+          if(userEmail === emailAdmin) {
              loginScreen.style.display = 'none';
              appContent.style.display = 'block';
              msg.textContent = "";
@@ -679,7 +685,7 @@
              // Inicializar a aplicação (carregar dados do Firebase)
              initApp();
           } else {
-             msg.textContent = `Acesso negado. O e-mail ${user.email} não é administrador.`;
+             msg.textContent = `Acesso negado. O e-mail ${userEmail} não é administrador.`;
              signOut(auth);
           }
         } else {
