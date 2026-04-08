@@ -301,6 +301,78 @@
     document.querySelectorAll('.header-nav a').forEach(a => {
       a.addEventListener('click', () => document.getElementById('headerNav').classList.remove('open'));
     });
+
+    // ═══════════════════════════════════════════════
+    // HERO INTERACTIVE FOCUS — Centraliza + Blur
+    // ═══════════════════════════════════════════════
+    (() => {
+      const hero = document.querySelector('.hero');
+      if (!hero) return;
+
+      let focusTimeout = null;
+      let isFocused = false;
+
+      // Ativa o estado focused com debounce
+      function activateFocus() {
+        clearTimeout(focusTimeout);
+        if (!isFocused) {
+          hero.classList.add('hero-focused');
+          isFocused = true;
+        }
+      }
+
+      // Desativa após inatividade (1.5s sem interação)
+      function scheduleDeFocus() {
+        clearTimeout(focusTimeout);
+        focusTimeout = setTimeout(() => {
+          hero.classList.remove('hero-focused');
+          isFocused = false;
+        }, 15000);
+      }
+
+      // Mouse move dentro do hero → ativa
+      hero.addEventListener('mousemove', () => {
+        activateFocus();
+        scheduleDeFocus();
+      });
+
+      // Mouse sai do hero → desativa após delay
+      hero.addEventListener('mouseleave', () => {
+        scheduleDeFocus();
+      });
+
+      // Scroll: ativa se a página rolou (qualquer scroll dentro do hero viewport)
+      let lastScrollY = 0;
+      window.addEventListener('scroll', () => {
+        const heroRect = hero.getBoundingClientRect();
+        const heroVisible = heroRect.top < window.innerHeight && heroRect.bottom > 0;
+
+        if (heroVisible && window.scrollY > 30) {
+          activateFocus();
+          scheduleDeFocus();
+        }
+
+        // Se scrollou para fora do hero, remove
+        if (!heroVisible && isFocused) {
+          hero.classList.remove('hero-focused');
+          isFocused = false;
+        }
+
+        lastScrollY = window.scrollY;
+      }, { passive: true });
+
+      // Wheel (scroll do mouse) dentro do hero → ativa imediatamente
+      hero.addEventListener('wheel', () => {
+        activateFocus();
+        scheduleDeFocus();
+      }, { passive: true });
+
+      // Touch: ativa ao tocar no mobile
+      hero.addEventListener('touchstart', () => {
+        activateFocus();
+        scheduleDeFocus();
+      }, { passive: true });
+    })();
   </script>
 
 </body>
