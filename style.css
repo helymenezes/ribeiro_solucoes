@@ -405,6 +405,8 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
   font-weight: 600; font-size: 0.85rem; color: var(--secondary);
 }
 .testimonial-name { font-weight: 600; font-size: 0.85rem; }
+.testimonial-link { color: inherit; border-bottom: 1px dotted transparent; transition: border-color 0.2s; }
+.testimonial-link:hover { border-color: currentColor; }
 .testimonial-role { font-size: 0.75rem; color: var(--secondary); }
 .badges {
   max-width: 1000px; margin: 3rem auto 0; display: flex; gap: 1.5rem;
@@ -437,6 +439,14 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 .contact-form input:focus, .contact-form textarea:focus { border-color: var(--accent); }
 .contact-form textarea { grid-column: 1 / -1; resize: vertical; min-height: 120px; }
 .contact-form .btn-primary { grid-column: 1 / -1; justify-content: center; }
+.form-status {
+  grid-column: 1 / -1;
+  min-height: 1.2rem;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+}
+.form-status.is-error { color: #FCA5A5; }
+.form-status.is-success { color: #86EFAC; }
 
 /* === FOOTER === */
 .site-footer {

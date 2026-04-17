@@ -1,0 +1,23 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "portfolio": {
+      "services": {
+        ".read": true,
+        ".write": "auth != null && auth.token.email != null && (auth.token.email == 'helymail@gmail.com' || auth.token.email == 'ribeirosolucoeseletric@gmail.com')",
+        "$serviceId": {
+          ".validate": "newData.hasChildren(['id', 'title', 'images']) && newData.child('id').isString() && newData.child('id').val() == $serviceId && newData.child('title').isString() && newData.child('title').val().length <= 80",
+          "images": {
+            "$index": {
+              ".validate": "newData.isString() && newData.val().matches(/^data:image\\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/)"
+            }
+          },
+          "$other": {
+            ".validate": "$other == 'id' || $other == 'title' || $other == 'images'"
+          }
+        }
+      }
+    }
+  }
+}

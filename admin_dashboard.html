@@ -3,6 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: https://www.gstatic.com; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://my-ladingpage-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src 'self' https://accounts.google.com https://*.google.com https://*.googleusercontent.com https://*.firebaseapp.com;">
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>Portfólio de Serviços - Ribeiro Soluções</title>
 
   <!-- ========== Trocar favicon e logo ==========
@@ -78,8 +82,8 @@
     .btn-google img { width:20px; height:20px; }
   </style>
 
-  <!-- JSZip (CDN) — usado para baixar todas as imagens em um ZIP -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
+  <!-- JSZip local — usado para baixar todas as imagens em um ZIP -->
+  <script src="vendor/jszip.min.js"></script>
 </head>
 <body>
   <!-- TELA DE LOGIN DO FIREBASE -->
@@ -186,7 +190,59 @@
     ===================== */
 
     // ── Utilitários ──
+    const SAFE_IMAGE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+    const MAX_SERVICE_TITLE_LENGTH = 80;
+    const MAX_SERVICE_IMAGES = 60;
+
     function uid() { return 's_' + Math.random().toString(36).slice(2,9); }
+
+    function sanitizeServiceTitle(value, fallback = 'Servico sem titulo') {
+      const normalized = String(value ?? '').replace(/\s+/g, ' ').trim();
+      return normalized.slice(0, MAX_SERVICE_TITLE_LENGTH) || fallback;
+    }
+
+    function sanitizeServiceId(value) {
+      const normalized = String(value ?? '').trim();
+      return /^s_[a-z0-9_-]{4,40}$/i.test(normalized) ? normalized : uid();
+    }
+
+    function isSafeImageDataUrl(value) {
+      return SAFE_IMAGE_DATA_URL_PATTERN.test(String(value ?? ''));
+    }
+
+    function sanitizeImageList(images) {
+      if (!Array.isArray(images)) return [];
+      return images.filter(isSafeImageDataUrl).slice(0, MAX_SERVICE_IMAGES);
+    }
+
+    function normalizeServiceRecord(input) {
+      if (!input || typeof input !== 'object') return null;
+      return {
+        id: sanitizeServiceId(input.id),
+        title: sanitizeServiceTitle(input.title),
+        images: sanitizeImageList(input.images)
+      };
+    }
+
+    function normalizeServices(input) {
+      const source = Array.isArray(input)
+        ? input
+        : input && typeof input === 'object'
+          ? Object.values(input)
+          : [];
+      const seenIds = new Set();
+
+      return source
+        .map(normalizeServiceRecord)
+        .filter(Boolean)
+        .map(service => {
+          while (seenIds.has(service.id)) {
+            service.id = uid();
+          }
+          seenIds.add(service.id);
+          return service;
+        });
+    }
 
     // ── Compressão de imagem via Canvas ──
     function compressImage(file, maxWidth = 800, quality = 0.7) {
@@ -226,8 +282,6 @@
     window.portfolioDB = null; // será inicializado pelo módulo Firebase abaixo
     window.portfolioUseFirebase = false;
 
-    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
     // Ler dados
     async function loadServices() {
       if (window.portfolioUseFirebase && window.portfolioDB) {
@@ -235,7 +289,7 @@
           const { ref, get } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
           const snapshot = await get(ref(window.portfolioDB, 'portfolio/services'));
           if (snapshot.exists()) {
-            return Object.values(snapshot.val());
+            return normalizeServices(snapshot.val());
           }
           return null;
         } catch(e) {
@@ -248,9 +302,15 @@
 
     // Salvar dados
     async function saveServices(data) {
+      const preparedData = normalizeServices(data);
+      if (Array.isArray(data)) {
+        data.length = 0;
+        preparedData.forEach(service => data.push(service));
+      }
+
       // Sempre salvar no localStorage como backup
       try {
-        localStorage.setItem('servicesData', JSON.stringify(data));
+        localStorage.setItem('servicesData', JSON.stringify(preparedData));
       } catch(e) {
         console.warn('localStorage cheio, usando apenas Firebase');
       }
@@ -260,7 +320,7 @@
           const { ref, set } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
           // Converter array para objeto com IDs como chaves
           const obj = {};
-          data.forEach(s => { obj[s.id] = s; });
+          preparedData.forEach(s => { obj[s.id] = s; });
           await set(ref(window.portfolioDB, 'portfolio/services'), obj);
           return true;
         } catch(e) {
@@ -273,7 +333,11 @@
     }
 
     function readLocalStorage() {
-      try { return JSON.parse(localStorage.getItem('servicesData') || 'null') || null; }
+      try {
+        const parsed = JSON.parse(localStorage.getItem('servicesData') || 'null');
+        const normalized = normalizeServices(parsed);
+        return normalized.length ? normalized : null;
+      }
       catch(e) { return null; }
     }
 
@@ -343,14 +407,16 @@
 
     // ── Renderizar grid de serviços ──
     function renderGrid() {
-      grid.innerHTML = '';
+      grid.replaceChildren();
       services.forEach(s => {
         const el = document.createElement('div');
         el.className = 'card';
-        el.innerHTML = `
-          <h3>${escapeHtml(s.title)}</h3>
-          <p>${(s.images || []).length} imagem(s)</p>
-        `;
+        const title = document.createElement('h3');
+        title.textContent = sanitizeServiceTitle(s.title);
+        const count = document.createElement('p');
+        count.textContent = `${sanitizeImageList(s.images).length} imagem(s)`;
+        el.appendChild(title);
+        el.appendChild(count);
         el.addEventListener('click', () => openService(s.id));
         grid.appendChild(el);
       });
@@ -378,7 +444,7 @@
     // ── Salvar título ──
     btnSaveTitle.addEventListener('click', async () => {
       if (!currentServiceId) return;
-      const newTitle = titleInput.value.trim() || 'Serviço sem título';
+      const newTitle = sanitizeServiceTitle(titleInput.value, 'Servico sem titulo');
       const s = services.find(x => x.id === currentServiceId);
       s.title = newTitle;
       const ok = await saveServices(services);
@@ -393,7 +459,7 @@
     btnNewService.addEventListener('click', async () => {
       const title = prompt('Título do novo serviço:', 'Novo Serviço');
       if (title === null) return;
-      const s = { id: uid(), title: title.trim() || 'Novo Serviço', images: [] };
+      const s = { id: uid(), title: sanitizeServiceTitle(title, 'Novo Servico'), images: [] };
       services.unshift(s);
       await saveServices(services);
       renderGrid();
@@ -442,6 +508,9 @@
 
           // Comprimir a imagem (max 800px, JPEG 70%)
           const compressed = await compressImage(files[i], 800, 0.7);
+          if (!isSafeImageDataUrl(compressed)) {
+            throw new Error('Formato de imagem invalido');
+          }
 
           s.images.push(compressed);
           successCount++;
@@ -489,42 +558,57 @@
 
     // ── Renderizar thumbnails ──
     function renderThumbs() {
-      thumbs.innerHTML = '';
+      thumbs.replaceChildren();
       const s = services.find(x => x.id === currentServiceId);
       if (!s || !s.images) return;
 
       s.images.forEach((dataURL, idx) => {
+        if (!isSafeImageDataUrl(dataURL)) return;
         const d = document.createElement('div');
         d.className = 'thumb';
-        d.innerHTML = `
-          <img src="${dataURL}" alt="imagem ${idx + 1}" />
-          <div class="meta">
-            <span>${idx + 1}</span>
-            <span style="display:flex; gap:6px;">
-              <button title="Visualizar" data-idx="${idx}" style="background:#06b6d4; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">Ver</button>
-              <button title="Baixar" data-download="${idx}" style="background:#059669; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">Baixar</button>
-              <button title="Remover" data-remove="${idx}" style="background:#ef4444; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;">X</button>
-            </span>
-          </div>
-        `;
-        thumbs.appendChild(d);
-      });
+        const img = document.createElement('img');
+        img.src = dataURL;
+        img.alt = `imagem ${idx + 1}`;
 
-      // Eventos dos botões
-      thumbs.querySelectorAll('button[title="Visualizar"]').forEach(b => {
-        b.onclick = (e) => { openLightbox(parseInt(e.currentTarget.getAttribute('data-idx'), 10)); };
-      });
-      thumbs.querySelectorAll('button[data-download]').forEach(b => {
-        b.onclick = (e) => {
-          const idx = parseInt(e.currentTarget.getAttribute('data-download'), 10);
-          downloadImageByIndex(idx);
-        };
-      });
-      thumbs.querySelectorAll('button[data-remove]').forEach(b => {
-        b.onclick = (e) => {
-          const idx = parseInt(e.currentTarget.getAttribute('data-remove'), 10);
-          removeImageByIndex(idx);
-        };
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+
+        const position = document.createElement('span');
+        position.textContent = String(idx + 1);
+
+        const actions = document.createElement('span');
+        actions.style.display = 'flex';
+        actions.style.gap = '6px';
+
+        const previewButton = document.createElement('button');
+        previewButton.type = 'button';
+        previewButton.title = 'Visualizar';
+        previewButton.style.cssText = 'background:#06b6d4; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;';
+        previewButton.textContent = 'Ver';
+        previewButton.addEventListener('click', () => openLightbox(idx));
+
+        const downloadButton = document.createElement('button');
+        downloadButton.type = 'button';
+        downloadButton.title = 'Baixar';
+        downloadButton.style.cssText = 'background:#059669; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;';
+        downloadButton.textContent = 'Baixar';
+        downloadButton.addEventListener('click', () => downloadImageByIndex(idx));
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.title = 'Remover';
+        removeButton.style.cssText = 'background:#ef4444; border:0; padding:6px 8px; border-radius:6px; color:#fff; cursor:pointer;';
+        removeButton.textContent = 'X';
+        removeButton.addEventListener('click', () => removeImageByIndex(idx));
+
+        actions.appendChild(previewButton);
+        actions.appendChild(downloadButton);
+        actions.appendChild(removeButton);
+        meta.appendChild(position);
+        meta.appendChild(actions);
+        d.appendChild(img);
+        d.appendChild(meta);
+        thumbs.appendChild(d);
       });
     }
 
@@ -545,7 +629,10 @@
       const s = services.find(x => x.id === currentServiceId);
       if (!s) return;
       const dataURL = s.images[idx];
-      if (!dataURL) return;
+      if (!isSafeImageDataUrl(dataURL)) {
+        showStatus('Imagem invalida para download.', 'error');
+        return;
+      }
       const a = document.createElement('a');
       a.href = dataURL;
       a.download = `${s.title.replace(/\s+/g, '_')}_${idx + 1}.jpg`;
@@ -563,6 +650,7 @@
       for (let i = 0; i < s.images.length; i++) {
         const dataURL = s.images[i];
         const blob = dataURLToBlob(dataURL);
+        if (!blob) continue;
         zip.file(`${s.title.replace(/\s+/g, '_')}_${i + 1}.jpg`, blob);
       }
       const content = await zip.generateAsync({ type: "blob" });
@@ -577,8 +665,11 @@
     });
 
     function dataURLToBlob(dataURL) {
+      if (!isSafeImageDataUrl(dataURL)) return null;
       const parts = dataURL.split(',');
-      const mime = parts[0].match(/:(.*?);/)[1];
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      if (!mimeMatch) return null;
+      const mime = mimeMatch[1];
       const bstr = atob(parts[1]);
       let n = bstr.length;
       const u8arr = new Uint8Array(n);
@@ -603,13 +694,26 @@
       const s = services.find(x => x.id === currentServiceId);
       if (!s || !s.images || !s.images.length) return;
       currentIndex = idx;
+      if (!isSafeImageDataUrl(s.images[currentIndex])) return;
       lbImage.src = s.images[currentIndex];
       lightbox.classList.add('show');
       lightbox.setAttribute('aria-hidden', 'false');
     }
-    function closeLightbox() { lightbox.classList.remove('show'); lightbox.setAttribute('aria-hidden', 'true'); }
-    function lbNextImg() { const s = services.find(x => x.id === currentServiceId); if (!s) return; currentIndex = (currentIndex + 1) % s.images.length; lbImage.src = s.images[currentIndex]; }
-    function lbPrevImg() { const s = services.find(x => x.id === currentServiceId); if (!s) return; currentIndex = (currentIndex - 1 + s.images.length) % s.images.length; lbImage.src = s.images[currentIndex]; }
+    function closeLightbox() { lightbox.classList.remove('show'); lightbox.setAttribute('aria-hidden', 'true'); lbImage.src = ''; }
+    function lbNextImg() {
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s || !s.images || !s.images.length) return;
+      currentIndex = (currentIndex + 1) % s.images.length;
+      if (!isSafeImageDataUrl(s.images[currentIndex])) return;
+      lbImage.src = s.images[currentIndex];
+    }
+    function lbPrevImg() {
+      const s = services.find(x => x.id === currentServiceId);
+      if (!s || !s.images || !s.images.length) return;
+      currentIndex = (currentIndex - 1 + s.images.length) % s.images.length;
+      if (!isSafeImageDataUrl(s.images[currentIndex])) return;
+      lbImage.src = s.images[currentIndex];
+    }
 
     lbClose.addEventListener('click', closeLightbox);
     lbNext.addEventListener('click', lbNextImg);
@@ -642,7 +746,10 @@
     };
 
     // E-mail do administrador
-    const emailAdmin = "helymail@gmail.com";
+    const ADMIN_EMAILS = [
+      "helymail@gmail.com",
+      "ribeirosolucoeseletric@gmail.com"
+    ];
 
     let app, auth, provider;
 
@@ -669,14 +776,53 @@
     const msg = document.getElementById('loginMessage');
     const btnLogoutEl = document.getElementById('btnLogout');
 
+    function getUserEmail(user) {
+      return user?.email
+        || (user?.providerData && user.providerData[0] && user.providerData[0].email)
+        || null;
+    }
+
+    function isAuthorizedAdminUser(user, userEmail) {
+      const providerIds = Array.isArray(user?.providerData)
+        ? user.providerData.map(item => item?.providerId).filter(Boolean)
+        : [];
+      const isGoogleUser = providerIds.includes('google.com');
+      const isVerified = user?.emailVerified !== false;
+      const normalizedEmail = String(userEmail || '').trim().toLowerCase();
+      const isAllowedAdmin = ADMIN_EMAILS.includes(normalizedEmail);
+      return Boolean(normalizedEmail && isAllowedAdmin && isGoogleUser && isVerified);
+    }
+
+    function getFirebaseLoginErrorMessage(error) {
+      const code = String(error?.code || '');
+
+      if (code === 'auth/popup-blocked') {
+        return 'O navegador bloqueou a janela de login. Libere pop-ups e tente novamente.';
+      }
+
+      if (code === 'auth/popup-closed-by-user') {
+        return 'A janela de login foi fechada antes da conclusao. Tente novamente.';
+      }
+
+      if (code === 'auth/unauthorized-domain' || code === 'auth/operation-not-allowed') {
+        return 'O dominio atual nao esta autorizado no Firebase Auth ou o login Google nao esta habilitado.';
+      }
+
+      if (code === 'auth/internal-error') {
+        return 'Erro interno do Firebase Auth. Verifique dominio autorizado, provedor Google habilitado e authDomain no projeto.';
+      }
+
+      return `Erro ao logar: ${code || error?.message || 'erro desconhecido'}`;
+    }
+
     if(auth) {
       onAuthStateChanged(auth, (user) => {
         if (user) {
           // Obter email com fallback (providerData caso user.email seja null)
-          const userEmail = user.email || (user.providerData && user.providerData[0] && user.providerData[0].email) || null;
+          const userEmail = getUserEmail(user);
           console.log('🔑 Email detectado:', userEmail);
 
-          if(userEmail === emailAdmin) {
+          if(isAuthorizedAdminUser(user, userEmail)) {
              loginScreen.style.display = 'none';
              appContent.style.display = 'block';
              msg.textContent = "";
@@ -697,7 +843,8 @@
       bgGoogle.addEventListener('click', () => {
         msg.textContent = "Aguardando login no Google...";
         signInWithPopup(auth, provider).catch(error => {
-           msg.textContent = "Erro ao logar: " + error.message;
+           console.error('Firebase Google login failed:', error);
+           msg.textContent = getFirebaseLoginErrorMessage(error);
         });
       });
 

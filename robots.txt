@@ -1,0 +1,13 @@
+# Ribeiro Soluções — robots.txt
+User-agent: *
+Allow: /
+
+# Bloquear painel administrativo para todos os crawlers
+Disallow: /admin_dashboard.html
+
+# Bloquear crawlers do Google Ads especificamente
+User-agent: AdsBot-Google
+Disallow: /admin_dashboard.html
+
+User-agent: AdsBot-Google-Mobile
+Disallow: /admin_dashboard.html
